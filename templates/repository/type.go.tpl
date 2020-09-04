@@ -283,6 +283,20 @@ func (iter *{{$lname}}Iterator) Intos(into *[]*model.{{.Name}}) error {
 	return nil
 }
 
+func (iter *{{$lname}}Iterator) IntoAny(into interface{}) error {
+	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("{{.Name}} not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *{{$lname}}Iterator) IntosAnySlice(into interface{}) error {
+	return intosAnySlice(iter.RowIterator, iter.cols, into)
+}
+
 func (b *{{$lname}}Builder) QueryCachedInto(ctx context.Context, into **model.{{.Name}}) error {
 	stmt := b.b.GetSelectStatement()
 	cacheKey, err := getCacheKey(stmt)

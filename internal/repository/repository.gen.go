@@ -8,6 +8,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"cloud.google.com/go/spanner"
@@ -42,6 +43,68 @@ func getCacheKey(stmt spanner.Statement) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func intoAny(iter *spanner.RowIterator, cols []string, into interface{}) error {
+	defer iter.Stop()
+	if reflect.TypeOf(into).Kind() != reflect.Ptr {
+		return fmt.Errorf("intoAny: argument is not pointer")
+	}
+	if len(cols) != 1 {
+		return fmt.Errorf("intoAny: multiple column not supported, use .Into instead")
+	}
+	value := reflect.ValueOf(into)
+
+	row, err := iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			return ErrNotFound
+		}
+		return fmt.Errorf("intoAny.iter: %w", err)
+	}
+
+	g := reflect.New(value.Elem().Type())
+	err = row.Column(0, g.Interface())
+	if err != nil {
+		return fmt.Errorf("intoAny.Column: %w", err)
+	}
+	value.Elem().Set(g.Elem())
+
+	return nil
+}
+
+func intosAnySlice(iter *spanner.RowIterator, cols []string, into interface{}) error {
+	defer iter.Stop()
+	if reflect.TypeOf(into).Kind() != reflect.Ptr {
+		return fmt.Errorf("intosAnySlice: argument is not pointer")
+	}
+	if len(cols) != 1 {
+		return fmt.Errorf("intosAnySlice: multiple column not supported, use .Intos instead")
+	}
+	value := reflect.ValueOf(into)
+	elem := value.Elem()
+	elemType := reflect.MakeSlice(elem.Type(), 1, 1).Index(0).Type()
+
+	for {
+		row, err := iter.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			return fmt.Errorf("intosAnySlice.iter: %w", err)
+		}
+
+		g := reflect.New(elemType)
+		err = row.Column(0, g.Interface())
+		if err != nil {
+			return fmt.Errorf("intosAnySlice.Column: %w", err)
+		}
+
+		elem = reflect.Append(elem, g.Elem())
+		value.Elem().Set(elem)
+	}
+
+	return nil
 }
 
 type userRepository struct {
@@ -290,6 +353,20 @@ func (iter *userIterator) Intos(into *[]*model.User) error {
 	}
 
 	return nil
+}
+
+func (iter *userIterator) IntoAny(into interface{}) error {
+	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("User not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *userIterator) IntosAnySlice(into interface{}) error {
+	return intosAnySlice(iter.RowIterator, iter.cols, into)
 }
 
 func (b *userBuilder) QueryCachedInto(ctx context.Context, into **model.User) error {
