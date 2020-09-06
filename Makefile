@@ -52,6 +52,14 @@ yo-gen:
 		--custom-type-package model \
 		--suffix _cached.gen.go \
 		--single-file
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/repository \
+		--from-ddl \
+		--template-path ./templates/repository_indexes_cached \
+		--inflection-rule-file templates/inflection_rule.yml \
+		--custom-types-file templates/custom_types.yml \
+		--custom-type-package model \
+		--suffix _indexes_cached.gen.go \
+		--single-file
 ### test
 test:
 	go test -v -p 1 ./...

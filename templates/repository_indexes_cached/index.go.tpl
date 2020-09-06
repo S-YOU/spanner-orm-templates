@@ -7,9 +7,9 @@
 
 {{- if not .Index.IsUnique }}
 
-// Get{{ .FuncName }} retrieves multiple rows from '{{ $table }}' as a slice of {{ .Type.Name }}.
+// Get{{ .FuncName }}Cached retrieves multiple rows from cache or '{{ $table }}' as a slice of {{ .Type.Name }}.
 // Generated from index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Find{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
+func ({{$short}} {{$name}}) Find{{ .FuncName }}Cached(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := []*model.{{ .Type.Name }}{}
 	if err := {{$short}}.Builder().
 		Where("{{ colnamesquery .Fields " AND " }}", Params{
@@ -17,7 +17,7 @@ func ({{$short}} {{$name}}) Find{{ .FuncName }}(ctx context.Context{{ goparamlis
 			{{- if (gt $i 0) }}, {{ end -}}
 			"param{{ $i }}": {{ goparamname $f.Name }}
 		{{- end}}}).
-		Query(ctx).Intos(&{{ $lname }}); err != nil {
+		QueryCachedIntos(ctx, &{{ $lname }}); err != nil {
 		return nil, err
 	}
 
@@ -25,17 +25,17 @@ func ({{$short}} {{$name}}) Find{{ .FuncName }}(ctx context.Context{{ goparamlis
 }
 {{- else }}
 
-// Find{{ .FuncName }} retrieves a row from '{{ $table }}' as a {{ .Type.Name }}.
+// Find{{ .FuncName }}Cached retrieves a row from cache or '{{ $table }}' as a {{ .Type.Name }}.
 // Generated from unique index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
+func ({{$short}} {{$name}}) Get{{ .FuncName }}Cached(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := &model.{{ .Type.Name }}{}
 	if err := {{$short}}.Builder().
 		Where("{{ colnamesquery .Fields " AND " }}", Params{
 		{{- range $i, $f := .Fields -}}
-			{{- if (gt $i 0) }}, {{- end }}
+			{{- if (gt $i 0) }}, {{ end -}}
 			"param{{ $i }}": {{ goparamname $f.Name }}
 		{{- end}}}).
-		Query(ctx).Into({{ $lname }}); err != nil {
+		QueryCachedInto(ctx, &{{ $lname }}); err != nil {
 		return nil, err
 	}
 
@@ -45,11 +45,11 @@ func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist
 
 {{- if eq (len .Fields) 1 }}
 
-// Find{{.FuncName}}s retrieves multiple rows from '{{ $table }}' as []*model.{{ .Type.Name }}.
+// Find{{.FuncName}}sCached retrieves multiple rows from '{{ $table }}' or from cache as []*model.{{ .Type.Name }}.
 // Generated from unique index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Find{{.FuncName}}s(ctx context.Context, ids []{{$idx0.Type}}) ([]*model.{{ .Type.Name }}, error) {
+func ({{$short}} {{$name}}) Find{{.FuncName}}sCached(ctx context.Context, ids []{{$idx0.Type}}) ([]*model.{{ .Type.Name }}, error) {
 	var items []*model.{{ .Type.Name }}
-	if err := {{$short}}.Builder().Where("{{colname $idx0.Col}} IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := {{$short}}.Builder().Where("{{colname $idx0.Col}} IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 

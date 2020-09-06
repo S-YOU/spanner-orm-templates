@@ -9,9 +9,7 @@ import (
 
 type GroupRepositoryIndexes interface {
 	GetGroupByGroupID(ctx context.Context, groupID string) (*model.Group, error)
-	GetGroupByGroupIDCached(ctx context.Context, groupID string) (*model.Group, error)
 	FindGroupByGroupIDs(ctx context.Context, ids []string) ([]*model.Group, error)
-	FindGroupByGroupIDsCached(ctx context.Context, ids []string) ([]*model.Group, error)
 }
 
 // GetGroupByGroupID retrieves a row from 'groups' as a Group.
@@ -21,19 +19,6 @@ func (g groupRepository) GetGroupByGroupID(ctx context.Context, groupID string) 
 	if err := g.Builder().
 		Where("group_id = @param0", Params{"param0": groupID}).
 		Query(ctx).Into(group); err != nil {
-		return nil, err
-	}
-
-	return group, nil
-}
-
-// GetGroupByGroupIDCached retrieves a row from cache or 'groups' as a Group.
-// Generated from primary key
-func (g groupRepository) GetGroupByGroupIDCached(ctx context.Context, groupID string) (*model.Group, error) {
-	group := &model.Group{}
-	if err := g.Builder().
-		Where("group_id = @param0", Params{"param0": groupID}).
-		QueryCachedInto(ctx, &group); err != nil {
 		return nil, err
 	}
 
@@ -51,26 +36,11 @@ func (g groupRepository) FindGroupByGroupIDs(ctx context.Context, ids []string) 
 	return items, nil
 }
 
-// FindGroupByGroupIDsCached retrieves multiple rows from 'groups' or cache as []*model.Group.
-// Generated from primary key
-func (g groupRepository) FindGroupByGroupIDsCached(ctx context.Context, ids []string) ([]*model.Group, error) {
-	var items []*model.Group
-	if err := g.Builder().Where("group_id IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
 type UserRepositoryIndexes interface {
 	GetUserByUserID(ctx context.Context, userID string) (*model.User, error)
-	GetUserByUserIDCached(ctx context.Context, userID string) (*model.User, error)
 	FindUserByUserIDs(ctx context.Context, ids []string) ([]*model.User, error)
-	FindUserByUserIDsCached(ctx context.Context, ids []string) ([]*model.User, error)
 	FindUsersByName(ctx context.Context, name string) ([]*model.User, error)
-	FindUsersByNameCached(ctx context.Context, name string) ([]*model.User, error)
 	FindUsersByNames(ctx context.Context, ids []string) ([]*model.User, error)
-	FindUsersByNamesCached(ctx context.Context, ids []string) ([]*model.User, error)
 }
 
 // GetUserByUserID retrieves a row from 'users' as a User.
@@ -80,19 +50,6 @@ func (u userRepository) GetUserByUserID(ctx context.Context, userID string) (*mo
 	if err := u.Builder().
 		Where("user_id = @param0", Params{"param0": userID}).
 		Query(ctx).Into(user); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-// GetUserByUserIDCached retrieves a row from cache or 'users' as a User.
-// Generated from primary key
-func (u userRepository) GetUserByUserIDCached(ctx context.Context, userID string) (*model.User, error) {
-	user := &model.User{}
-	if err := u.Builder().
-		Where("user_id = @param0", Params{"param0": userID}).
-		QueryCachedInto(ctx, &user); err != nil {
 		return nil, err
 	}
 
@@ -110,24 +67,10 @@ func (u userRepository) FindUserByUserIDs(ctx context.Context, ids []string) ([]
 	return items, nil
 }
 
-// FindUserByUserIDsCached retrieves multiple rows from 'users' or cache as []*model.User.
-// Generated from primary key
-func (u userRepository) FindUserByUserIDsCached(ctx context.Context, ids []string) ([]*model.User, error) {
-	var items []*model.User
-	if err := u.Builder().Where("user_id IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
 type UserGroupRepositoryIndexes interface {
 	GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
-	GetUserGroupByGroupIDAndUserIDCached(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
 	FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error)
-	FindUserGroupsByUserIDCached(ctx context.Context, userID string) ([]*model.UserGroup, error)
 	FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error)
-	FindUserGroupsByUserIDsCached(ctx context.Context, ids []string) ([]*model.UserGroup, error)
 }
 
 // GetUserGroupByGroupIDAndUserID retrieves a row from 'user_groups' as a UserGroup.
@@ -137,19 +80,6 @@ func (ug userGroupRepository) GetUserGroupByGroupIDAndUserID(ctx context.Context
 	if err := ug.Builder().
 		Where("group_id = @param0 AND user_id = @param1", Params{"param0": groupID, "param1": userID}).
 		Query(ctx).Into(userGroup); err != nil {
-		return nil, err
-	}
-
-	return userGroup, nil
-}
-
-// GetUserGroupByGroupIDAndUserIDCached retrieves a row from cache or 'user_groups' as a UserGroup.
-// Generated from primary key
-func (ug userGroupRepository) GetUserGroupByGroupIDAndUserIDCached(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
-	userGroup := &model.UserGroup{}
-	if err := ug.Builder().
-		Where("group_id = @param0 AND user_id = @param1", Params{"param0": groupID, "param1": userID}).
-		QueryCachedInto(ctx, &userGroup); err != nil {
 		return nil, err
 	}
 
@@ -169,35 +99,11 @@ func (u userRepository) FindUsersByName(ctx context.Context, name string) ([]*mo
 	return user, nil
 }
 
-// GetUsersByNameCached retrieves multiple rows from cache or 'users' as a slice of User.
-// Generated from index 'idx_users_name'.
-func (u userRepository) FindUsersByNameCached(ctx context.Context, name string) ([]*model.User, error) {
-	user := []*model.User{}
-	if err := u.Builder().
-		Where("name = @param0", Params{"param0": name}).
-		QueryCachedIntos(ctx, &user); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
 // FindUsersByNames retrieves multiple rows from 'users' as []*model.User.
 // Generated from unique index 'idx_users_name'.
 func (u userRepository) FindUsersByNames(ctx context.Context, ids []string) ([]*model.User, error) {
 	var items []*model.User
 	if err := u.Builder().Where("name IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-// FindUsersByNamesCached retrieves multiple rows from 'users' or from cache as []*model.User.
-// Generated from unique index 'idx_users_name'.
-func (u userRepository) FindUsersByNamesCached(ctx context.Context, ids []string) ([]*model.User, error) {
-	var items []*model.User
-	if err := u.Builder().Where("name IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 
@@ -217,35 +123,11 @@ func (ug userGroupRepository) FindUserGroupsByUserID(ctx context.Context, userID
 	return userGroup, nil
 }
 
-// GetUserGroupsByUserIDCached retrieves multiple rows from cache or 'user_groups' as a slice of UserGroup.
-// Generated from index 'idx_group_users_user_id'.
-func (ug userGroupRepository) FindUserGroupsByUserIDCached(ctx context.Context, userID string) ([]*model.UserGroup, error) {
-	userGroup := []*model.UserGroup{}
-	if err := ug.Builder().
-		Where("user_id = @param0", Params{"param0": userID}).
-		QueryCachedIntos(ctx, &userGroup); err != nil {
-		return nil, err
-	}
-
-	return userGroup, nil
-}
-
 // FindUserGroupsByUserIDs retrieves multiple rows from 'user_groups' as []*model.UserGroup.
 // Generated from unique index 'idx_group_users_user_id'.
 func (ug userGroupRepository) FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error) {
 	var items []*model.UserGroup
 	if err := ug.Builder().Where("user_id IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-// FindUserGroupsByUserIDsCached retrieves multiple rows from 'user_groups' or from cache as []*model.UserGroup.
-// Generated from unique index 'idx_group_users_user_id'.
-func (ug userGroupRepository) FindUserGroupsByUserIDsCached(ctx context.Context, ids []string) ([]*model.UserGroup, error) {
-	var items []*model.UserGroup
-	if err := ug.Builder().Where("user_id IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 
