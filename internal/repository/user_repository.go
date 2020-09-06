@@ -4,7 +4,7 @@ type UserRepository interface {
 	//ExampleQuery(ctx context.Context) error
 
 	UserRepositoryIndexes
-	UserRepositoryCrud
+	UserRepositoryCRUD
 }
 
 //func (u *userRepository) ExampleQuery(ctx context.Context) error {

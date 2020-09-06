@@ -203,16 +203,6 @@ type groupIterator struct {
 	cols []string
 }
 
-type GroupRepositoryCrud interface {
-	FindAll(ctx context.Context) ([]*model.Group, error)
-	FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.Group, error)
-	CreateGroup(ctx context.Context, name string) (*model.Group, error)
-	CreateOrUpdateGroup(ctx context.Context, name string) (*model.Group, error)
-	InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error)
-	UpdateGroup(ctx context.Context, group *model.Group) error
-	DeleteGroup(ctx context.Context, group *model.Group) error
-}
-
 func NewGroupRepository(client *spanner.Client) GroupRepository {
 	return &groupRepository{
 		Repository: Repository{
@@ -486,70 +476,6 @@ func (b *groupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.Grou
 	return nil
 }
 
-func (g groupRepository) FindAll(ctx context.Context) ([]*model.Group, error) {
-	var items []*model.Group
-	if err := g.Builder().Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-func (g groupRepository) FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.Group, error) {
-	items := make([]*model.Group, 0)
-	builder := g.Builder()
-	if cursor != "" {
-		builder.Where("group_id < ?", cursor)
-	}
-	if err := builder.OrderBy("group_id DESC").Limit(limit).Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-func (g groupRepository) InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
-	if _, err := g.Insert(ctx, group); err != nil {
-		return nil, err
-	}
-
-	return group, nil
-}
-
-func (g groupRepository) CreateGroup(ctx context.Context, name string) (*model.Group, error) {
-	groupEntity := &model.Group{Name: name}
-	if _, err := g.Insert(ctx, groupEntity); err != nil {
-		return nil, err
-	}
-
-	return groupEntity, nil
-}
-
-func (g groupRepository) CreateOrUpdateGroup(ctx context.Context, name string) (*model.Group, error) {
-	groupEntity := &model.Group{Name: name}
-	if _, err := g.InsertOrUpdate(ctx, groupEntity); err != nil {
-		return nil, err
-	}
-
-	return groupEntity, nil
-}
-
-func (g groupRepository) UpdateGroup(ctx context.Context, group *model.Group) error {
-	_, err := g.Update(ctx, group)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (g groupRepository) DeleteGroup(ctx context.Context, group *model.Group) error {
-	_, err := g.Delete(ctx, group)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type userRepository struct {
 	Repository
 }
@@ -562,16 +488,6 @@ type userBuilder struct {
 type userIterator struct {
 	*spanner.RowIterator
 	cols []string
-}
-
-type UserRepositoryCrud interface {
-	FindAll(ctx context.Context) ([]*model.User, error)
-	FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.User, error)
-	CreateUser(ctx context.Context, name string, status int64) (*model.User, error)
-	CreateOrUpdateUser(ctx context.Context, name string, status int64) (*model.User, error)
-	InsertUser(ctx context.Context, user *model.User) (*model.User, error)
-	UpdateUser(ctx context.Context, user *model.User) error
-	DeleteUser(ctx context.Context, user *model.User) error
 }
 
 func NewUserRepository(client *spanner.Client) UserRepository {
@@ -847,70 +763,6 @@ func (b *userBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.User)
 	return nil
 }
 
-func (u userRepository) FindAll(ctx context.Context) ([]*model.User, error) {
-	var items []*model.User
-	if err := u.Builder().Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-func (u userRepository) FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.User, error) {
-	items := make([]*model.User, 0)
-	builder := u.Builder()
-	if cursor != "" {
-		builder.Where("user_id < ?", cursor)
-	}
-	if err := builder.OrderBy("user_id DESC").Limit(limit).Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-func (u userRepository) InsertUser(ctx context.Context, user *model.User) (*model.User, error) {
-	if _, err := u.Insert(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-func (u userRepository) CreateUser(ctx context.Context, name string, status int64) (*model.User, error) {
-	userEntity := &model.User{Name: name, Status: status}
-	if _, err := u.Insert(ctx, userEntity); err != nil {
-		return nil, err
-	}
-
-	return userEntity, nil
-}
-
-func (u userRepository) CreateOrUpdateUser(ctx context.Context, name string, status int64) (*model.User, error) {
-	userEntity := &model.User{Name: name, Status: status}
-	if _, err := u.InsertOrUpdate(ctx, userEntity); err != nil {
-		return nil, err
-	}
-
-	return userEntity, nil
-}
-
-func (u userRepository) UpdateUser(ctx context.Context, user *model.User) error {
-	_, err := u.Update(ctx, user)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (u userRepository) DeleteUser(ctx context.Context, user *model.User) error {
-	_, err := u.Delete(ctx, user)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type userGroupRepository struct {
 	Repository
 }
@@ -923,15 +775,6 @@ type userGroupBuilder struct {
 type userGroupIterator struct {
 	*spanner.RowIterator
 	cols []string
-}
-
-type UserGroupRepositoryCrud interface {
-	FindAll(ctx context.Context) ([]*model.UserGroup, error)
-	CreateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
-	CreateOrUpdateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
-	InsertUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error)
-	UpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) error
-	DeleteUserGroup(ctx context.Context, userGroup *model.UserGroup) error
 }
 
 func NewUserGroupRepository(client *spanner.Client) UserGroupRepository {
@@ -1216,55 +1059,5 @@ func (b *userGroupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.
 	}
 	cache.Set(cacheKey, *into)
 
-	return nil
-}
-
-func (ug userGroupRepository) FindAll(ctx context.Context) ([]*model.UserGroup, error) {
-	var items []*model.UserGroup
-	if err := ug.Builder().Query(ctx).Intos(&items); err != nil {
-		return nil, err
-	}
-
-	return items, nil
-}
-
-func (ug userGroupRepository) InsertUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error) {
-	if _, err := ug.Insert(ctx, userGroup); err != nil {
-		return nil, err
-	}
-
-	return userGroup, nil
-}
-func (ug userGroupRepository) CreateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
-	userGroupEntity := &model.UserGroup{GroupID: groupID, UserID: userID}
-	if _, err := ug.Insert(ctx, userGroupEntity); err != nil {
-		return nil, err
-	}
-
-	return userGroupEntity, nil
-}
-
-func (ug userGroupRepository) CreateOrUpdateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
-	userGroupEntity := &model.UserGroup{GroupID: groupID, UserID: userID}
-	if _, err := ug.InsertOrUpdate(ctx, userGroupEntity); err != nil {
-		return nil, err
-	}
-
-	return userGroupEntity, nil
-}
-
-func (ug userGroupRepository) UpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) error {
-	_, err := ug.Update(ctx, userGroup)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ug userGroupRepository) DeleteUserGroup(ctx context.Context, userGroup *model.UserGroup) error {
-	_, err := ug.Delete(ctx, userGroup)
-	if err != nil {
-		return err
-	}
 	return nil
 }
