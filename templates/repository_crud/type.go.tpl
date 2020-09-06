@@ -11,16 +11,13 @@ type {{ $database }}CRUD interface {
 	{{- if eq (len .PrimaryKeyFields) 1}}
 	FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.{{.Name}}, error)
 	{{- end}}
-	{{- if eq (len .PrimaryKeyFields) 1}}
-		{{- if and (le (columncount .Fields "CreatedAt" "UpdatedAt" .PrimaryKeyFields) 5) (ne (fieldnames .Fields $short "CreatedAt" "UpdatedAt" .PrimaryKeyFields) "") }}
+	{{- if le (columncount .Fields "CreatedAt" "UpdatedAt" .PrimaryKeyFields) 5 }}
+		{{- if eq (len .PrimaryKeyFields) 1}}
 	Create{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt" .PrimaryKeyFields}}) (*model.{{.Name}}, error)
-	CreateOrUpdate{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt" .PrimaryKeyFields}}) (*model.{{.Name}}, error)
-		{{- end }}
-	{{- else }}
-		{{- if and (le (columncount .Fields "CreatedAt" "UpdatedAt") 7) (ne (fieldnames .Fields $short "CreatedAt" "UpdatedAt") "") }}
+		{{- else }}
 	Create{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt"}}) (*model.{{.Name}}, error)
-	CreateOrUpdate{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt"}}) (*model.{{.Name}}, error)
 		{{- end }}
+	CreateOrUpdate{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt"}}) (*model.{{.Name}}, error)
 	{{- end }}
 	Insert{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) (*model.{{.Name}}, error)
 	Update{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) error
@@ -62,8 +59,8 @@ func ({{$short}} {{$name}}) Insert{{.Name}}(ctx context.Context, {{$lname}} *mod
 	return {{$lname}}, nil
 }
 
+{{- if le (columncount .Fields "CreatedAt" "UpdatedAt" .PrimaryKeyFields) 5 }}
 {{- if eq (len .PrimaryKeyFields) 1}}
-{{- if and (le (columncount .Fields "CreatedAt" "UpdatedAt" .PrimaryKeyFields) 5) (ne (fieldnames .Fields $short "CreatedAt" "UpdatedAt" .PrimaryKeyFields ) "") }}
 
 func ({{$short}} {{$name}}) Create{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt" .PrimaryKeyFields}}) (*model.{{.Name}}, error) {
 	{{$lname}}Entity := &model.{{.Name}}{
@@ -83,28 +80,7 @@ func ({{$short}} {{$name}}) Create{{.Name}}(ctx context.Context{{gocustomparamli
 
 	return {{$lname}}Entity, nil
 }
-
-func ({{$short}} {{$name}}) CreateOrUpdate{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt" .PrimaryKeyFields}}) (*model.{{.Name}}, error) {
-	{{$lname}}Entity := &model.{{.Name}}{
-	{{- range $i, $f := .Fields -}}
-		{{- $skip := false -}}
-		{{- if or (eq $f.Name "CreatedAt") (eq $f.Name "UpdatedAt") }}{{ $skip = true }}{{- end -}}
-		{{- range $j, $ff := $primaryKeys }}{{ if eq $f.Name $ff.Name }}{{ $skip = true }}{{- end}}{{- end -}}
-		{{- if not $skip -}}
-			{{if gt $i (len $primaryKeys)}}, {{end}}
-			{{- .Name}}: {{ goparamname $f.Name }}
-		{{- end -}}
-	{{ end -}}
-	}
-	if _, err := {{$short}}.InsertOrUpdate(ctx, {{$lname}}Entity); err != nil {
-		return nil, err
-	}
-
-	return {{$lname}}Entity, nil
-}
-{{- end}}
 {{- else }}
-{{ if and (le (columncount .Fields "CreatedAt" "UpdatedAt") 7) (ne (fieldnames .Fields $short "CreatedAt" "UpdatedAt") "") -}}
 func ({{$short}} {{$name}}) Create{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt"}}) (*model.{{.Name}}, error) {
 	{{$lname}}Entity := &model.{{.Name}}{
 	{{- range $i, $f := .Fields -}}
@@ -122,6 +98,7 @@ func ({{$short}} {{$name}}) Create{{.Name}}(ctx context.Context{{gocustomparamli
 
 	return {{$lname}}Entity, nil
 }
+{{- end}}
 
 func ({{$short}} {{$name}}) CreateOrUpdate{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt"}}) (*model.{{.Name}}, error) {
 	{{ $primaryKeys := .PrimaryKeyFields -}}
@@ -141,7 +118,6 @@ func ({{$short}} {{$name}}) CreateOrUpdate{{.Name}}(ctx context.Context{{gocusto
 
 	return {{$lname}}Entity, nil
 }
-{{- end}}
 {{- end }}
 
 func ({{$short}} {{$name}}) Update{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) error {

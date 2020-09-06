@@ -11,7 +11,7 @@ type GroupRepositoryCRUD interface {
 	FindAll(ctx context.Context) ([]*model.Group, error)
 	FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.Group, error)
 	CreateGroup(ctx context.Context, name string) (*model.Group, error)
-	CreateOrUpdateGroup(ctx context.Context, name string) (*model.Group, error)
+	CreateOrUpdateGroup(ctx context.Context, groupID string, name string) (*model.Group, error)
 	InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error)
 	UpdateGroup(ctx context.Context, group *model.Group) error
 	DeleteGroup(ctx context.Context, group *model.Group) error
@@ -56,8 +56,8 @@ func (g groupRepository) CreateGroup(ctx context.Context, name string) (*model.G
 	return groupEntity, nil
 }
 
-func (g groupRepository) CreateOrUpdateGroup(ctx context.Context, name string) (*model.Group, error) {
-	groupEntity := &model.Group{Name: name}
+func (g groupRepository) CreateOrUpdateGroup(ctx context.Context, groupID string, name string) (*model.Group, error) {
+	groupEntity := &model.Group{GroupID: groupID, Name: name}
 	if _, err := g.InsertOrUpdate(ctx, groupEntity); err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ type UserRepositoryCRUD interface {
 	FindAll(ctx context.Context) ([]*model.User, error)
 	FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.User, error)
 	CreateUser(ctx context.Context, name string, status int64) (*model.User, error)
-	CreateOrUpdateUser(ctx context.Context, name string, status int64) (*model.User, error)
+	CreateOrUpdateUser(ctx context.Context, userID string, name string, status int64) (*model.User, error)
 	InsertUser(ctx context.Context, user *model.User) (*model.User, error)
 	UpdateUser(ctx context.Context, user *model.User) error
 	DeleteUser(ctx context.Context, user *model.User) error
@@ -130,8 +130,8 @@ func (u userRepository) CreateUser(ctx context.Context, name string, status int6
 	return userEntity, nil
 }
 
-func (u userRepository) CreateOrUpdateUser(ctx context.Context, name string, status int64) (*model.User, error) {
-	userEntity := &model.User{Name: name, Status: status}
+func (u userRepository) CreateOrUpdateUser(ctx context.Context, userID string, name string, status int64) (*model.User, error) {
+	userEntity := &model.User{UserID: userID, Name: name, Status: status}
 	if _, err := u.InsertOrUpdate(ctx, userEntity); err != nil {
 		return nil, err
 	}
