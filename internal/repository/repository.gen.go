@@ -189,6 +189,422 @@ func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
 	return nil
 }
 
+type groupRepository struct {
+	Repository
+}
+
+type groupBuilder struct {
+	b      *spannerbuilder.Builder
+	client *spanner.Client
+}
+
+type groupIterator struct {
+	*spanner.RowIterator
+	cols []string
+}
+
+type GroupRepositoryIndexes interface {
+	GetGroupByGroupID(ctx context.Context, groupID string) (*model.Group, error)
+	GetGroupByGroupIDCached(ctx context.Context, groupID string) (*model.Group, error)
+	FindGroupByGroupIDs(ctx context.Context, ids []string) ([]*model.Group, error)
+	FindGroupByGroupIDsCached(ctx context.Context, ids []string) ([]*model.Group, error)
+}
+
+type GroupRepositoryCrud interface {
+	FindAll(ctx context.Context) ([]*model.Group, error)
+	FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.Group, error)
+	CreateGroup(ctx context.Context, name string) (*model.Group, error)
+	CreateOrUpdateGroup(ctx context.Context, name string) (*model.Group, error)
+	InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error)
+	UpdateGroup(ctx context.Context, group *model.Group) error
+	DeleteGroup(ctx context.Context, group *model.Group) error
+}
+
+func NewGroupRepository(client *spanner.Client) GroupRepository {
+	return &groupRepository{
+		Repository: Repository{
+			client: client,
+		},
+	}
+}
+
+func (g *groupRepository) Query(ctx context.Context, stmt spanner.Statement) *groupIterator {
+	iter := g.client.Single().Query(ctx, stmt)
+
+	return &groupIterator{iter, model.GroupColumns()}
+}
+
+func (g *groupRepository) Insert(ctx context.Context, group *model.Group) (*time.Time, error) {
+	if err := group.SetIdentity(); err != nil {
+		return nil, err
+	}
+	if group.CreatedAt.IsZero() {
+		group.CreatedAt = time.Now()
+	}
+	if group.UpdatedAt.IsZero() {
+		group.UpdatedAt = time.Now()
+	}
+
+	mutations := []*spanner.Mutation{
+		group.Insert(ctx),
+	}
+	t, err := g.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group) (time.Time, error) {
+	if err := group.SetIdentity(); err != nil {
+		return time.Time{}, err
+	}
+	if group.CreatedAt.IsZero() {
+		group.CreatedAt = time.Now()
+	}
+	if group.UpdatedAt.IsZero() {
+		group.UpdatedAt = time.Now()
+	}
+
+	mutations := []*spanner.Mutation{
+		group.InsertOrUpdate(ctx),
+	}
+	t, err := g.client.Apply(ctx, mutations)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
+}
+
+func (g *groupRepository) Update(ctx context.Context, group *model.Group) (*time.Time, error) {
+	if group.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if group.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	group.UpdatedAt = time.Now()
+
+	mutations := []*spanner.Mutation{
+		group.Update(ctx),
+	}
+	t, err := g.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (g *groupRepository) UpdateColumns(ctx context.Context, group *model.Group, cols ...string) (*time.Time, error) {
+	if group.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if group.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	group.UpdatedAt = time.Now()
+
+	mutation, err := group.UpdateColumns(ctx, cols...)
+	if err != nil {
+		return nil, err
+	}
+	mutations := []*spanner.Mutation{mutation}
+	t, err := g.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (g *groupRepository) UpdateMap(ctx context.Context, group *model.Group, groupMap map[string]interface{}) (*time.Time, error) {
+	if group.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if group.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	group.UpdatedAt = time.Now()
+
+	mutation := group.UpdateMap(ctx, groupMap)
+	mutations := []*spanner.Mutation{mutation}
+	t, err := g.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (g *groupRepository) Delete(ctx context.Context, group *model.Group) (*time.Time, error) {
+	if group.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if group.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	group.UpdatedAt = time.Now()
+
+	mutation := group.Delete(ctx)
+	mutations := []*spanner.Mutation{mutation}
+	t, err := g.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (g *groupRepository) Builder() *groupBuilder {
+	return &groupBuilder{
+		b:      spannerbuilder.NewSpannerBuilder("groups", model.GroupColumns(), model.GroupPrimaryKeys()),
+		client: g.client,
+	}
+}
+
+func (b *groupBuilder) Select(s string) *groupBuilder {
+	b.b.Select(s)
+	return b
+}
+
+func (b *groupBuilder) Join(s string) *groupBuilder {
+	b.b.Join(s)
+	return b
+}
+
+func (b *groupBuilder) Where(s string, args ...interface{}) *groupBuilder {
+	b.b.Where(s, args...)
+	return b
+}
+
+func (b *groupBuilder) OrderBy(s string) *groupBuilder {
+	b.b.OrderBy(s)
+	return b
+}
+
+func (b *groupBuilder) Limit(i int) *groupBuilder {
+	b.b.Limit(i)
+	return b
+}
+
+func (b *groupBuilder) Query(ctx context.Context) *groupIterator {
+	stmt := b.b.GetSelectStatement()
+	iter := b.client.Single().Query(ctx, stmt)
+	return &groupIterator{iter, b.b.Columns()}
+}
+
+func (iter *groupIterator) Into(into *model.Group) error {
+	return iter.IntoDecodable(into)
+}
+
+func (iter *groupIterator) Intos(into *[]*model.Group) error {
+	defer iter.Stop()
+	for {
+		row, err := iter.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			return fmt.Errorf("Intos.iter: %w", err)
+		}
+
+		g := &model.Group{}
+		err = DecodeInto(iter.cols, row, g)
+		if err != nil {
+			return fmt.Errorf("Intos.iter: %w", err)
+		}
+
+		*into = append(*into, g)
+	}
+
+	return nil
+}
+
+func (iter *groupIterator) IntoDecodable(into Decodable) error {
+	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("Group not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *groupIterator) IntosDecodable(into interface{}) error {
+	return intosDecodable(iter.RowIterator, iter.cols, into)
+}
+
+func (iter *groupIterator) IntoAny(into interface{}) error {
+	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("Group not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *groupIterator) IntosAnySlice(into interface{}) error {
+	return intosAnySlice(iter.RowIterator, iter.cols, into)
+}
+
+func (b *groupBuilder) QueryCachedInto(ctx context.Context, into **model.Group) error {
+	stmt := b.b.GetSelectStatement()
+	cacheKey, err := getCacheKey(stmt)
+	if err != nil {
+		return err
+	}
+
+	cached := middleware.CacheFromContext(ctx)
+	if v, ok := cached.Get(cacheKey); ok {
+		if *into, ok = v.(*model.Group); ok {
+			return nil
+		}
+	}
+	iter := b.client.Single().Query(ctx, stmt)
+	it := &groupIterator{iter, b.b.Columns()}
+	err = it.Into(*into)
+	if err != nil {
+		return err
+	}
+	cached.Set(cacheKey, *into)
+
+	return nil
+}
+
+func (b *groupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.Group) error {
+	stmt := b.b.GetSelectStatement()
+	cacheKey, err := getCacheKey(stmt)
+	if err != nil {
+		return err
+	}
+
+	cache := middleware.CacheFromContext(ctx)
+	if v, ok := cache.Get(cacheKey); ok {
+		if *into, ok = v.([]*model.Group); ok {
+			return nil
+		}
+	}
+	iter := b.client.Single().Query(ctx, stmt)
+	it := &groupIterator{iter, b.b.Columns()}
+	err = it.Intos(into)
+	if err != nil {
+		return err
+	}
+	cache.Set(cacheKey, *into)
+
+	return nil
+}
+
+// GetGroupByGroupID retrieves a row from 'groups' as a Group.
+// Generated from primary key
+func (g groupRepository) GetGroupByGroupID(ctx context.Context, groupID string) (*model.Group, error) {
+	group := &model.Group{}
+	if err := g.Builder().
+		Where("group_id = @param0", Params{"param0": groupID}).
+		Query(ctx).Into(group); err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// GetGroupByGroupIDCached retrieves a row from cache or 'groups' as a Group.
+// Generated from primary key
+func (g groupRepository) GetGroupByGroupIDCached(ctx context.Context, groupID string) (*model.Group, error) {
+	group := &model.Group{}
+	if err := g.Builder().
+		Where("group_id = @param0", Params{"param0": groupID}).
+		QueryCachedInto(ctx, &group); err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
+// FindGroupByGroupIDs retrieves multiple rows from 'groups' as []*model.Group.
+// Generated from primary key
+func (g groupRepository) FindGroupByGroupIDs(ctx context.Context, ids []string) ([]*model.Group, error) {
+	var items []*model.Group
+	if err := g.Builder().Where("group_id IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// FindGroupByGroupIDsCached retrieves multiple rows from 'groups' or cache as []*model.Group.
+// Generated from primary key
+func (g groupRepository) FindGroupByGroupIDsCached(ctx context.Context, ids []string) ([]*model.Group, error) {
+	var items []*model.Group
+	if err := g.Builder().Where("group_id IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (g groupRepository) FindAll(ctx context.Context) ([]*model.Group, error) {
+	var items []*model.Group
+	if err := g.Builder().Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (g groupRepository) FindAllWithCursor(ctx context.Context, limit int, cursor string) ([]*model.Group, error) {
+	items := make([]*model.Group, 0)
+	builder := g.Builder()
+	if cursor != "" {
+		builder.Where("group_id < ?", cursor)
+	}
+	if err := builder.OrderBy("group_id DESC").Limit(limit).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (g groupRepository) InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
+	if _, err := g.Insert(ctx, group); err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
+func (g groupRepository) CreateGroup(ctx context.Context, name string) (*model.Group, error) {
+	groupEntity := &model.Group{Name: name}
+	if _, err := g.Insert(ctx, groupEntity); err != nil {
+		return nil, err
+	}
+
+	return groupEntity, nil
+}
+
+func (g groupRepository) CreateOrUpdateGroup(ctx context.Context, name string) (*model.Group, error) {
+	groupEntity := &model.Group{Name: name}
+	if _, err := g.InsertOrUpdate(ctx, groupEntity); err != nil {
+		return nil, err
+	}
+
+	return groupEntity, nil
+}
+
+func (g groupRepository) UpdateGroup(ctx context.Context, group *model.Group) error {
+	_, err := g.Update(ctx, group)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g groupRepository) DeleteGroup(ctx context.Context, group *model.Group) error {
+	_, err := g.Delete(ctx, group)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type userRepository struct {
 	Repository
 }
@@ -609,6 +1025,399 @@ func (u userRepository) DeleteUser(ctx context.Context, user *model.User) error 
 	return nil
 }
 
+type userGroupRepository struct {
+	Repository
+}
+
+type userGroupBuilder struct {
+	b      *spannerbuilder.Builder
+	client *spanner.Client
+}
+
+type userGroupIterator struct {
+	*spanner.RowIterator
+	cols []string
+}
+
+type UserGroupRepositoryIndexes interface {
+	GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
+	GetUserGroupByGroupIDAndUserIDCached(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
+	FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error)
+	FindUserGroupsByUserIDCached(ctx context.Context, userID string) ([]*model.UserGroup, error)
+	FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error)
+	FindUserGroupsByUserIDsCached(ctx context.Context, ids []string) ([]*model.UserGroup, error)
+}
+
+type UserGroupRepositoryCrud interface {
+	FindAll(ctx context.Context) ([]*model.UserGroup, error)
+	CreateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
+	CreateOrUpdateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
+	InsertUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error)
+	UpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) error
+	DeleteUserGroup(ctx context.Context, userGroup *model.UserGroup) error
+}
+
+func NewUserGroupRepository(client *spanner.Client) UserGroupRepository {
+	return &userGroupRepository{
+		Repository: Repository{
+			client: client,
+		},
+	}
+}
+
+func (ug *userGroupRepository) Query(ctx context.Context, stmt spanner.Statement) *userGroupIterator {
+	iter := ug.client.Single().Query(ctx, stmt)
+
+	return &userGroupIterator{iter, model.UserGroupColumns()}
+}
+
+func (ug *userGroupRepository) Insert(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
+	if err := userGroup.SetIdentity(); err != nil {
+		return nil, err
+	}
+	if userGroup.CreatedAt.IsZero() {
+		userGroup.CreatedAt = time.Now()
+	}
+	if userGroup.UpdatedAt.IsZero() {
+		userGroup.UpdatedAt = time.Now()
+	}
+
+	mutations := []*spanner.Mutation{
+		userGroup.Insert(ctx),
+	}
+	t, err := ug.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *model.UserGroup) (time.Time, error) {
+	if err := userGroup.SetIdentity(); err != nil {
+		return time.Time{}, err
+	}
+	if userGroup.CreatedAt.IsZero() {
+		userGroup.CreatedAt = time.Now()
+	}
+	if userGroup.UpdatedAt.IsZero() {
+		userGroup.UpdatedAt = time.Now()
+	}
+
+	mutations := []*spanner.Mutation{
+		userGroup.InsertOrUpdate(ctx),
+	}
+	t, err := ug.client.Apply(ctx, mutations)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
+}
+
+func (ug *userGroupRepository) Update(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
+	if userGroup.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if userGroup.UserID == "" {
+		return nil, fmt.Errorf("primary_key `user_id` is blank")
+	}
+	if userGroup.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	userGroup.UpdatedAt = time.Now()
+
+	mutations := []*spanner.Mutation{
+		userGroup.Update(ctx),
+	}
+	t, err := ug.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (ug *userGroupRepository) UpdateColumns(ctx context.Context, userGroup *model.UserGroup, cols ...string) (*time.Time, error) {
+	if userGroup.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if userGroup.UserID == "" {
+		return nil, fmt.Errorf("primary_key `user_id` is blank")
+	}
+	if userGroup.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	userGroup.UpdatedAt = time.Now()
+
+	mutation, err := userGroup.UpdateColumns(ctx, cols...)
+	if err != nil {
+		return nil, err
+	}
+	mutations := []*spanner.Mutation{mutation}
+	t, err := ug.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (ug *userGroupRepository) UpdateMap(ctx context.Context, userGroup *model.UserGroup, userGroupMap map[string]interface{}) (*time.Time, error) {
+	if userGroup.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if userGroup.UserID == "" {
+		return nil, fmt.Errorf("primary_key `user_id` is blank")
+	}
+	if userGroup.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	userGroup.UpdatedAt = time.Now()
+
+	mutation := userGroup.UpdateMap(ctx, userGroupMap)
+	mutations := []*spanner.Mutation{mutation}
+	t, err := ug.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (ug *userGroupRepository) Delete(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
+	if userGroup.GroupID == "" {
+		return nil, fmt.Errorf("primary_key `group_id` is blank")
+	}
+	if userGroup.UserID == "" {
+		return nil, fmt.Errorf("primary_key `user_id` is blank")
+	}
+	if userGroup.CreatedAt.IsZero() {
+		return nil, fmt.Errorf("created_at is blank")
+	}
+	userGroup.UpdatedAt = time.Now()
+
+	mutation := userGroup.Delete(ctx)
+	mutations := []*spanner.Mutation{mutation}
+	t, err := ug.client.Apply(ctx, mutations)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (ug *userGroupRepository) Builder() *userGroupBuilder {
+	return &userGroupBuilder{
+		b:      spannerbuilder.NewSpannerBuilder("user_groups", model.UserGroupColumns(), model.UserGroupPrimaryKeys()),
+		client: ug.client,
+	}
+}
+
+func (b *userGroupBuilder) Select(s string) *userGroupBuilder {
+	b.b.Select(s)
+	return b
+}
+
+func (b *userGroupBuilder) Join(s string) *userGroupBuilder {
+	b.b.Join(s)
+	return b
+}
+
+func (b *userGroupBuilder) Where(s string, args ...interface{}) *userGroupBuilder {
+	b.b.Where(s, args...)
+	return b
+}
+
+func (b *userGroupBuilder) OrderBy(s string) *userGroupBuilder {
+	b.b.OrderBy(s)
+	return b
+}
+
+func (b *userGroupBuilder) Limit(i int) *userGroupBuilder {
+	b.b.Limit(i)
+	return b
+}
+
+func (b *userGroupBuilder) Query(ctx context.Context) *userGroupIterator {
+	stmt := b.b.GetSelectStatement()
+	iter := b.client.Single().Query(ctx, stmt)
+	return &userGroupIterator{iter, b.b.Columns()}
+}
+
+func (iter *userGroupIterator) Into(into *model.UserGroup) error {
+	return iter.IntoDecodable(into)
+}
+
+func (iter *userGroupIterator) Intos(into *[]*model.UserGroup) error {
+	defer iter.Stop()
+	for {
+		row, err := iter.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			return fmt.Errorf("Intos.iter: %w", err)
+		}
+
+		ug := &model.UserGroup{}
+		err = DecodeInto(iter.cols, row, ug)
+		if err != nil {
+			return fmt.Errorf("Intos.iter: %w", err)
+		}
+
+		*into = append(*into, ug)
+	}
+
+	return nil
+}
+
+func (iter *userGroupIterator) IntoDecodable(into Decodable) error {
+	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("UserGroup not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *userGroupIterator) IntosDecodable(into interface{}) error {
+	return intosDecodable(iter.RowIterator, iter.cols, into)
+}
+
+func (iter *userGroupIterator) IntoAny(into interface{}) error {
+	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("UserGroup not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *userGroupIterator) IntosAnySlice(into interface{}) error {
+	return intosAnySlice(iter.RowIterator, iter.cols, into)
+}
+
+func (b *userGroupBuilder) QueryCachedInto(ctx context.Context, into **model.UserGroup) error {
+	stmt := b.b.GetSelectStatement()
+	cacheKey, err := getCacheKey(stmt)
+	if err != nil {
+		return err
+	}
+
+	cached := middleware.CacheFromContext(ctx)
+	if v, ok := cached.Get(cacheKey); ok {
+		if *into, ok = v.(*model.UserGroup); ok {
+			return nil
+		}
+	}
+	iter := b.client.Single().Query(ctx, stmt)
+	it := &userGroupIterator{iter, b.b.Columns()}
+	err = it.Into(*into)
+	if err != nil {
+		return err
+	}
+	cached.Set(cacheKey, *into)
+
+	return nil
+}
+
+func (b *userGroupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.UserGroup) error {
+	stmt := b.b.GetSelectStatement()
+	cacheKey, err := getCacheKey(stmt)
+	if err != nil {
+		return err
+	}
+
+	cache := middleware.CacheFromContext(ctx)
+	if v, ok := cache.Get(cacheKey); ok {
+		if *into, ok = v.([]*model.UserGroup); ok {
+			return nil
+		}
+	}
+	iter := b.client.Single().Query(ctx, stmt)
+	it := &userGroupIterator{iter, b.b.Columns()}
+	err = it.Intos(into)
+	if err != nil {
+		return err
+	}
+	cache.Set(cacheKey, *into)
+
+	return nil
+}
+
+// GetUserGroupByGroupIDAndUserID retrieves a row from 'user_groups' as a UserGroup.
+// Generated from primary key
+func (ug userGroupRepository) GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
+	userGroup := &model.UserGroup{}
+	if err := ug.Builder().
+		Where("group_id = @param0 AND user_id = @param1", Params{"param0": groupID, "param1": userID}).
+		Query(ctx).Into(userGroup); err != nil {
+		return nil, err
+	}
+
+	return userGroup, nil
+}
+
+// GetUserGroupByGroupIDAndUserIDCached retrieves a row from cache or 'user_groups' as a UserGroup.
+// Generated from primary key
+func (ug userGroupRepository) GetUserGroupByGroupIDAndUserIDCached(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
+	userGroup := &model.UserGroup{}
+	if err := ug.Builder().
+		Where("group_id = @param0 AND user_id = @param1", Params{"param0": groupID, "param1": userID}).
+		QueryCachedInto(ctx, &userGroup); err != nil {
+		return nil, err
+	}
+
+	return userGroup, nil
+}
+
+func (ug userGroupRepository) FindAll(ctx context.Context) ([]*model.UserGroup, error) {
+	var items []*model.UserGroup
+	if err := ug.Builder().Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (ug userGroupRepository) InsertUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error) {
+	if _, err := ug.Insert(ctx, userGroup); err != nil {
+		return nil, err
+	}
+
+	return userGroup, nil
+}
+func (ug userGroupRepository) CreateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
+	userGroupEntity := &model.UserGroup{GroupID: groupID, UserID: userID}
+	if _, err := ug.Insert(ctx, userGroupEntity); err != nil {
+		return nil, err
+	}
+
+	return userGroupEntity, nil
+}
+
+func (ug userGroupRepository) CreateOrUpdateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
+	userGroupEntity := &model.UserGroup{GroupID: groupID, UserID: userID}
+	if _, err := ug.InsertOrUpdate(ctx, userGroupEntity); err != nil {
+		return nil, err
+	}
+
+	return userGroupEntity, nil
+}
+
+func (ug userGroupRepository) UpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) error {
+	_, err := ug.Update(ctx, userGroup)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ug userGroupRepository) DeleteUserGroup(ctx context.Context, userGroup *model.UserGroup) error {
+	_, err := ug.Delete(ctx, userGroup)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetUsersByName retrieves multiple rows from 'users' as a slice of User.
 // Generated from index 'idx_users_name'.
 func (u userRepository) FindUsersByName(ctx context.Context, name string) ([]*model.User, error) {
@@ -651,6 +1460,54 @@ func (u userRepository) FindUsersByNames(ctx context.Context, ids []string) ([]*
 func (u userRepository) FindUsersByNamesCached(ctx context.Context, ids []string) ([]*model.User, error) {
 	var items []*model.User
 	if err := u.Builder().Where("name IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// GetUserGroupsByUserID retrieves multiple rows from 'user_groups' as a slice of UserGroup.
+// Generated from index 'idx_group_users_user_id'.
+func (ug userGroupRepository) FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error) {
+	userGroup := []*model.UserGroup{}
+	if err := ug.Builder().
+		Where("user_id = @param0", Params{"param0": userID}).
+		Query(ctx).Intos(&userGroup); err != nil {
+		return nil, err
+	}
+
+	return userGroup, nil
+}
+
+// GetUserGroupsByUserIDCached retrieves multiple rows from cache or 'user_groups' as a slice of UserGroup.
+// Generated from index 'idx_group_users_user_id'.
+func (ug userGroupRepository) FindUserGroupsByUserIDCached(ctx context.Context, userID string) ([]*model.UserGroup, error) {
+	userGroup := []*model.UserGroup{}
+	if err := ug.Builder().
+		Where("user_id = @param0", Params{"param0": userID}).
+		QueryCachedIntos(ctx, &userGroup); err != nil {
+		return nil, err
+	}
+
+	return userGroup, nil
+}
+
+// FindUserGroupsByUserIDs retrieves multiple rows from 'user_groups' as []*model.UserGroup.
+// Generated from unique index 'idx_group_users_user_id'.
+func (ug userGroupRepository) FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error) {
+	var items []*model.UserGroup
+	if err := ug.Builder().Where("user_id IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// FindUserGroupsByUserIDsCached retrieves multiple rows from 'user_groups' or from cache as []*model.UserGroup.
+// Generated from unique index 'idx_group_users_user_id'.
+func (ug userGroupRepository) FindUserGroupsByUserIDsCached(ctx context.Context, ids []string) ([]*model.UserGroup, error) {
+	var items []*model.UserGroup
+	if err := ug.Builder().Where("user_id IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 

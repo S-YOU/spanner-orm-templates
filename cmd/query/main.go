@@ -30,6 +30,20 @@ func main() {
 		}
 	}
 
+	g := repository.NewGroupRepository(sdb)
+	if items, err := g.FindAll(ctx); err == nil {
+		for _, x := range items {
+			fmt.Println("Group.FindAll", x)
+		}
+	}
+
+	ug := repository.NewUserGroupRepository(sdb)
+	if items, err := ug.FindAll(ctx); err == nil {
+		for _, x := range items {
+			fmt.Println("UserGroup.FindAll", x)
+		}
+	}
+
 	//if err := u.ExampleQuery(ctx); err != nil {
 	//	log.Fatal(err)
 	//}
