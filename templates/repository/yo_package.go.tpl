@@ -2,10 +2,7 @@
 package {{ .Package }}
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
@@ -14,10 +11,8 @@ import (
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/iterator"
 
-	"github.com/cespare/xxhash"
 	"github.com/s-you/apierrors"
 	"github.com/s-you/spannerbuilder"
-	"github.com/s-you/yo-templates/internal/middleware"
 	"github.com/s-you/yo-templates/internal/model"
 )
 
@@ -34,20 +29,6 @@ type Decodable interface {
 var (
 	ErrNotFound = errors.New("NotFound")
 )
-
-func getCacheKey(stmt spanner.Statement) (string, error) {
-	sum64 := xxhash.Sum64String(stmt.SQL)
-	buf := new(bytes.Buffer)
-	cacheKey := make([]byte, 8)
-	binary.LittleEndian.PutUint64(cacheKey, sum64)
-	buf.Write(cacheKey)
-	e := gob.NewEncoder(buf)
-	err := e.Encode(stmt.Params)
-	if err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
 
 func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {
 	defer iter.Stop()

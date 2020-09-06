@@ -2,10 +2,7 @@
 package repository
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
@@ -14,10 +11,8 @@ import (
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/iterator"
 
-	"github.com/cespare/xxhash"
 	"github.com/s-you/apierrors"
 	"github.com/s-you/spannerbuilder"
-	"github.com/s-you/yo-templates/internal/middleware"
 	"github.com/s-you/yo-templates/internal/model"
 )
 
@@ -34,20 +29,6 @@ type Decodable interface {
 var (
 	ErrNotFound = errors.New("NotFound")
 )
-
-func getCacheKey(stmt spanner.Statement) (string, error) {
-	sum64 := xxhash.Sum64String(stmt.SQL)
-	buf := new(bytes.Buffer)
-	cacheKey := make([]byte, 8)
-	binary.LittleEndian.PutUint64(cacheKey, sum64)
-	buf.Write(cacheKey)
-	e := gob.NewEncoder(buf)
-	err := e.Encode(stmt.Params)
-	if err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
 
 func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {
 	defer iter.Stop()
@@ -428,54 +409,6 @@ func (iter *groupIterator) IntosAnySlice(into interface{}) error {
 	return intosAnySlice(iter.RowIterator, iter.cols, into)
 }
 
-func (b *groupBuilder) QueryCachedInto(ctx context.Context, into **model.Group) error {
-	stmt := b.b.GetSelectStatement()
-	cacheKey, err := getCacheKey(stmt)
-	if err != nil {
-		return err
-	}
-
-	cached := middleware.CacheFromContext(ctx)
-	if v, ok := cached.Get(cacheKey); ok {
-		if *into, ok = v.(*model.Group); ok {
-			return nil
-		}
-	}
-	iter := b.client.Single().Query(ctx, stmt)
-	it := &groupIterator{iter, b.b.Columns()}
-	err = it.Into(*into)
-	if err != nil {
-		return err
-	}
-	cached.Set(cacheKey, *into)
-
-	return nil
-}
-
-func (b *groupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.Group) error {
-	stmt := b.b.GetSelectStatement()
-	cacheKey, err := getCacheKey(stmt)
-	if err != nil {
-		return err
-	}
-
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
-		if *into, ok = v.([]*model.Group); ok {
-			return nil
-		}
-	}
-	iter := b.client.Single().Query(ctx, stmt)
-	it := &groupIterator{iter, b.b.Columns()}
-	err = it.Intos(into)
-	if err != nil {
-		return err
-	}
-	cache.Set(cacheKey, *into)
-
-	return nil
-}
-
 type userRepository struct {
 	Repository
 }
@@ -713,54 +646,6 @@ func (iter *userIterator) IntoAny(into interface{}) error {
 
 func (iter *userIterator) IntosAnySlice(into interface{}) error {
 	return intosAnySlice(iter.RowIterator, iter.cols, into)
-}
-
-func (b *userBuilder) QueryCachedInto(ctx context.Context, into **model.User) error {
-	stmt := b.b.GetSelectStatement()
-	cacheKey, err := getCacheKey(stmt)
-	if err != nil {
-		return err
-	}
-
-	cached := middleware.CacheFromContext(ctx)
-	if v, ok := cached.Get(cacheKey); ok {
-		if *into, ok = v.(*model.User); ok {
-			return nil
-		}
-	}
-	iter := b.client.Single().Query(ctx, stmt)
-	it := &userIterator{iter, b.b.Columns()}
-	err = it.Into(*into)
-	if err != nil {
-		return err
-	}
-	cached.Set(cacheKey, *into)
-
-	return nil
-}
-
-func (b *userBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.User) error {
-	stmt := b.b.GetSelectStatement()
-	cacheKey, err := getCacheKey(stmt)
-	if err != nil {
-		return err
-	}
-
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
-		if *into, ok = v.([]*model.User); ok {
-			return nil
-		}
-	}
-	iter := b.client.Single().Query(ctx, stmt)
-	it := &userIterator{iter, b.b.Columns()}
-	err = it.Intos(into)
-	if err != nil {
-		return err
-	}
-	cache.Set(cacheKey, *into)
-
-	return nil
 }
 
 type userGroupRepository struct {
@@ -1012,52 +897,4 @@ func (iter *userGroupIterator) IntoAny(into interface{}) error {
 
 func (iter *userGroupIterator) IntosAnySlice(into interface{}) error {
 	return intosAnySlice(iter.RowIterator, iter.cols, into)
-}
-
-func (b *userGroupBuilder) QueryCachedInto(ctx context.Context, into **model.UserGroup) error {
-	stmt := b.b.GetSelectStatement()
-	cacheKey, err := getCacheKey(stmt)
-	if err != nil {
-		return err
-	}
-
-	cached := middleware.CacheFromContext(ctx)
-	if v, ok := cached.Get(cacheKey); ok {
-		if *into, ok = v.(*model.UserGroup); ok {
-			return nil
-		}
-	}
-	iter := b.client.Single().Query(ctx, stmt)
-	it := &userGroupIterator{iter, b.b.Columns()}
-	err = it.Into(*into)
-	if err != nil {
-		return err
-	}
-	cached.Set(cacheKey, *into)
-
-	return nil
-}
-
-func (b *userGroupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.UserGroup) error {
-	stmt := b.b.GetSelectStatement()
-	cacheKey, err := getCacheKey(stmt)
-	if err != nil {
-		return err
-	}
-
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
-		if *into, ok = v.([]*model.UserGroup); ok {
-			return nil
-		}
-	}
-	iter := b.client.Single().Query(ctx, stmt)
-	it := &userGroupIterator{iter, b.b.Columns()}
-	err = it.Intos(into)
-	if err != nil {
-		return err
-	}
-	cache.Set(cacheKey, *into)
-
-	return nil
 }
