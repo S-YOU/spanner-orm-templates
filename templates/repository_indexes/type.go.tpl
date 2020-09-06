@@ -9,9 +9,8 @@
 type {{ $database }}Indexes interface {
 	Get{{.Name}}By{{- range $i, $f := .PrimaryKeyFields }}{{ if (gt $i 0) }}And{{ end }}{{ .Name }}{{ end -}}
 		(ctx context.Context{{ goparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error)
-	{{- if eq (len .PrimaryKeyFields) 1 }}
-	Find{{.Name}}By{{$pkey0.Name}}s(ctx context.Context, ids []{{$pkey0.Type}}) ([]*model.{{ .Name }}, error)
-	{{- end }}
+	Find{{.Name}}sBy{{- range $i, $f := .PrimaryKeyFields }}{{ if (gt $i 0) }}And{{ end }}{{ .Name }}s{{ end -}}
+		(ctx context.Context{{- range .PrimaryKeyFields }}, {{goparamname .Name}}s []{{.Type}}{{end}}) ([]*model.{{ .Name }}, error)
 	{{- range .Indexes -}}
 		{{- if not .Index.IsUnique }}
 	Find{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error)
@@ -45,17 +44,20 @@ func ({{$short}} {{$name}}) Get{{.Name}}By
 	return {{ $lname }}, nil
 }
 
-{{- if eq (len .PrimaryKeyFields) 1 }}
-
-// Find{{.Name}}By{{$pkey0.Name}}s retrieves multiple rows from '{{ $table }}' as []*model.{{ .Name }}.
+// Find{{.Name}}sBy{{- range $i, $f := .PrimaryKeyFields }}{{ if (gt $i 0) }}And{{ end }}{{ .Name }}s{{ end }} retrieves multiple rows from '{{ $table }}' as []*model.{{ .Name }}.
 // Generated from primary key
-func ({{$short}} {{$name}}) Find{{.Name}}By{{$pkey0.Name}}s(ctx context.Context, ids []{{$pkey0.Type}}) ([]*model.{{ .Name }}, error) {
+func ({{$short}} {{$name}}) Find{{.Name}}sBy{{- range $i, $f := .PrimaryKeyFields }}{{ if (gt $i 0) }}And{{ end }}{{ .Name }}s{{ end -}}
+	(ctx context.Context{{- range .PrimaryKeyFields }}, {{goparamname .Name}}s []{{.Type}}{{end}}) ([]*model.{{ .Name }}, error) {
 	var items []*model.{{ .Name }}
-	if err := {{$short}}.Builder().Where("{{colname $pkey0.Col}} IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := {{$short}}.Builder().Where("{{- range $i, $f := .PrimaryKeyFields }}{{ if (gt $i 0) }} AND {{ end }}{{colname $f.Col}} IN UNNEST(@arg{{$i}}){{ end -}}", Params{
+	{{- range $i, $f := .PrimaryKeyFields -}}
+		{{- if (gt $i 0) }}, {{ end -}}
+		"arg{{ $i }}": {{ goparamname $f.Name }}s
+	{{- end}}}).
+		Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
 	return items, nil
 }
-{{- end }}
 {{- /* */ -}}

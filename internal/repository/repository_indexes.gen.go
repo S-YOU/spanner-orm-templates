@@ -9,7 +9,7 @@ import (
 
 type GroupRepositoryIndexes interface {
 	GetGroupByGroupID(ctx context.Context, groupID string) (*model.Group, error)
-	FindGroupByGroupIDs(ctx context.Context, ids []string) ([]*model.Group, error)
+	FindGroupsByGroupIDs(ctx context.Context, groupIDs []string) ([]*model.Group, error)
 }
 
 // GetGroupByGroupID retrieves a row from 'groups' as a Group.
@@ -25,11 +25,12 @@ func (g groupRepository) GetGroupByGroupID(ctx context.Context, groupID string) 
 	return group, nil
 }
 
-// FindGroupByGroupIDs retrieves multiple rows from 'groups' as []*model.Group.
+// FindGroupsByGroupIDs retrieves multiple rows from 'groups' as []*model.Group.
 // Generated from primary key
-func (g groupRepository) FindGroupByGroupIDs(ctx context.Context, ids []string) ([]*model.Group, error) {
+func (g groupRepository) FindGroupsByGroupIDs(ctx context.Context, groupIDs []string) ([]*model.Group, error) {
 	var items []*model.Group
-	if err := g.Builder().Where("group_id IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := g.Builder().Where("group_id IN UNNEST(@arg0)", Params{"arg0": groupIDs}).
+		Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
@@ -38,7 +39,7 @@ func (g groupRepository) FindGroupByGroupIDs(ctx context.Context, ids []string) 
 
 type UserRepositoryIndexes interface {
 	GetUserByUserID(ctx context.Context, userID string) (*model.User, error)
-	FindUserByUserIDs(ctx context.Context, ids []string) ([]*model.User, error)
+	FindUsersByUserIDs(ctx context.Context, userIDs []string) ([]*model.User, error)
 	FindUsersByName(ctx context.Context, name string) ([]*model.User, error)
 	FindUsersByNames(ctx context.Context, ids []string) ([]*model.User, error)
 }
@@ -56,11 +57,12 @@ func (u userRepository) GetUserByUserID(ctx context.Context, userID string) (*mo
 	return user, nil
 }
 
-// FindUserByUserIDs retrieves multiple rows from 'users' as []*model.User.
+// FindUsersByUserIDs retrieves multiple rows from 'users' as []*model.User.
 // Generated from primary key
-func (u userRepository) FindUserByUserIDs(ctx context.Context, ids []string) ([]*model.User, error) {
+func (u userRepository) FindUsersByUserIDs(ctx context.Context, userIDs []string) ([]*model.User, error) {
 	var items []*model.User
-	if err := u.Builder().Where("user_id IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := u.Builder().Where("user_id IN UNNEST(@arg0)", Params{"arg0": userIDs}).
+		Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
@@ -69,6 +71,7 @@ func (u userRepository) FindUserByUserIDs(ctx context.Context, ids []string) ([]
 
 type UserGroupRepositoryIndexes interface {
 	GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
+	FindUserGroupsByGroupIDsAndUserIDs(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error)
 	FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error)
 	FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error)
 }
@@ -84,6 +87,18 @@ func (ug userGroupRepository) GetUserGroupByGroupIDAndUserID(ctx context.Context
 	}
 
 	return userGroup, nil
+}
+
+// FindUserGroupsByGroupIDsAndUserIDs retrieves multiple rows from 'user_groups' as []*model.UserGroup.
+// Generated from primary key
+func (ug userGroupRepository) FindUserGroupsByGroupIDsAndUserIDs(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error) {
+	var items []*model.UserGroup
+	if err := ug.Builder().Where("group_id IN UNNEST(@arg0) AND user_id IN UNNEST(@arg1)", Params{"arg0": groupIDs, "arg1": userIDs}).
+		Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }
 
 // GetUsersByName retrieves multiple rows from 'users' as a slice of User.
