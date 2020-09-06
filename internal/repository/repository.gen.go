@@ -203,7 +203,7 @@ type userIterator struct {
 	cols []string
 }
 
-type UserRepositoryGenerated interface {
+type UserRepositoryIndexes interface {
 	GetUserByUserID(ctx context.Context, userID string) (*model.User, error)
 	GetUserByUserIDCached(ctx context.Context, userID string) (*model.User, error)
 	FindUserByUserIDs(ctx context.Context, ids []string) ([]*model.User, error)

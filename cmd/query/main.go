@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/s-you/yo-templates/internal/config"
 	"github.com/s-you/yo-templates/internal/pkg/spannerclient"
@@ -25,12 +24,10 @@ func main() {
 	defer sdb.Close()
 
 	u := repository.NewUserRepository(sdb)
-	users, err := u.FindAll(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, x := range users {
-		fmt.Println("FindAll", x)
+	if items, err := u.FindAll(ctx); err == nil {
+		for _, x := range items {
+			fmt.Println("User.FindAll", x)
+		}
 	}
 
 	//if err := u.ExampleQuery(ctx); err != nil {

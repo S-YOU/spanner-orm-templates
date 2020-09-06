@@ -8,9 +8,26 @@ import (
 	"time"
 
 	"cloud.google.com/go/spanner"
+	"github.com/s-you/yo-templates/internal/util"
 )
 
 type H = map[string]interface{}
+
+// User represents a row from 'users'.
+type User struct {
+	UserID    string    `spanner:"user_id" json:"userID"`       // user_id
+	Name      string    `spanner:"name" json:"name"`            // name
+	Status    int64     `spanner:"status" json:"status"`        // status
+	CreatedAt time.Time `spanner:"created_at" json:"createdAt"` // created_at
+	UpdatedAt time.Time `spanner:"updated_at" json:"updatedAt"` // updated_at
+}
+
+func (u *User) SetIdentity() (err error) {
+	if u.UserID == "" {
+		u.UserID, err = util.NewUUID()
+	}
+	return nil
+}
 
 func UserPrimaryKeys() []string {
 	return []string{
