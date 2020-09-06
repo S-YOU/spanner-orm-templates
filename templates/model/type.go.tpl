@@ -20,14 +20,9 @@ func {{ .Name }}Columns() []string {
 	}
 }
 
-func ({{ $short }} *{{ .Name }}) columnsToPtrs(cols []string, customPtrs map[string]interface{}) ([]interface{}, error) {
+func ({{ $short }} *{{ .Name }}) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
-		if val, ok := customPtrs[col]; ok {
-			ret = append(ret, val)
-			continue
-		}
-
 		switch col {
 {{- range .Fields }}
 		case "{{ colname .Col }}":
@@ -54,23 +49,6 @@ func ({{ $short }} *{{ .Name }}) columnsToValues(cols []string) ([]interface{}, 
 	}
 
 	return ret, nil
-}
-
-// {{ .Name }}_DecodeInto decodes row into *{{.Name}}
-// The decoder is not goroutine-safe. Don't use it concurrently.
-func {{ .Name }}_DecodeInto(cols []string, row *spanner.Row, into *{{.Name}}) error {
-	customPtrs := map[string]interface{}{}
-
-	ptrs, err := into.columnsToPtrs(cols, customPtrs)
-	if err != nil {
-		return err
-	}
-
-	if err := row.Columns(ptrs...); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Insert returns a Mutation to insert a row into a table. If the row already

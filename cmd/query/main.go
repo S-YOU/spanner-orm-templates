@@ -30,6 +30,10 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, x := range users {
-		fmt.Println(x)
+		fmt.Println("FindAll", x)
 	}
+
+	//if err := u.ExampleQuery(ctx); err != nil {
+	//	log.Fatal(err)
+	//}
 }

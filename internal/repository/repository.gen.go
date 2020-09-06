@@ -27,6 +27,10 @@ type Repository struct {
 
 type Params = map[string]interface{}
 
+type Decodable interface {
+	ColumnsToPtrs([]string) ([]interface{}, error)
+}
+
 var (
 	ErrNotFound = errors.New("NotFound")
 )
@@ -43,6 +47,69 @@ func getCacheKey(stmt spanner.Statement) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {
+	defer iter.Stop()
+
+	row, err := iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			return ErrNotFound
+		}
+		return fmt.Errorf("intoDecodable.iter: %w", err)
+	}
+
+	if err := DecodeInto(cols, row, into); err != nil {
+		return fmt.Errorf("intoDecodable.DecodeInto: %w", err)
+	}
+
+	return nil
+}
+
+func intosDecodable(iter *spanner.RowIterator, cols []string, intos interface{}) error {
+	defer iter.Stop()
+
+	if reflect.TypeOf(intos).Kind() != reflect.Ptr {
+		return fmt.Errorf("intosDecodable: argument is not pointer")
+	}
+	value := reflect.ValueOf(intos)
+	elem := value.Elem()
+	elemType := reflect.MakeSlice(elem.Type(), 1, 1).Index(0).Type()
+	isPtr := false
+	if elemType.Kind() == reflect.Ptr {
+		elemType = elemType.Elem()
+		isPtr = true
+	}
+
+	for {
+		row, err := iter.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			return fmt.Errorf("intosDecodable.iter: %w", err)
+		}
+
+		g := reflect.New(elemType)
+		if into, ok := g.Interface().(Decodable); ok {
+			err = DecodeInto(cols, row, into)
+			if err != nil {
+				return fmt.Errorf("intosDecodable.DecodeInto: %w", err)
+			}
+
+			if isPtr {
+				elem = reflect.Append(elem, g)
+			} else {
+				elem = reflect.Append(elem, g.Elem())
+			}
+			value.Elem().Set(elem)
+		} else {
+			return fmt.Errorf("intosDecodable: not Decodable")
+		}
+	}
+
+	return nil
 }
 
 func intoAny(iter *spanner.RowIterator, cols []string, into interface{}) error {
@@ -102,6 +169,21 @@ func intosAnySlice(iter *spanner.RowIterator, cols []string, into interface{}) e
 
 		elem = reflect.Append(elem, g.Elem())
 		value.Elem().Set(elem)
+	}
+
+	return nil
+}
+
+// DecodeInto decodes row into Decodable
+// The decoder is not goroutine-safe. Don't use it concurrently.
+func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
+	ptrs, err := into.ColumnsToPtrs(cols)
+	if err != nil {
+		return err
+	}
+
+	if err := row.Columns(ptrs...); err != nil {
+		return err
 	}
 
 	return nil
@@ -313,27 +395,11 @@ func (b *userBuilder) Query(ctx context.Context) *userIterator {
 }
 
 func (iter *userIterator) Into(into *model.User) error {
-	defer iter.Stop()
-
-	row, err := iter.Next()
-	if err != nil {
-		if err == iterator.Done {
-			return apierrors.ErrNotFound.Swrapf("User not found: %w", ErrNotFound)
-		}
-		return fmt.Errorf("into.iter: %w", err)
-	}
-
-	err = model.User_DecodeInto(iter.cols, row, into)
-	if err != nil {
-		return fmt.Errorf("into.decoder: %w", err)
-	}
-
-	return nil
+	return iter.IntoDecodable(into)
 }
 
 func (iter *userIterator) Intos(into *[]*model.User) error {
 	defer iter.Stop()
-
 	for {
 		row, err := iter.Next()
 		if err != nil {
@@ -344,7 +410,7 @@ func (iter *userIterator) Intos(into *[]*model.User) error {
 		}
 
 		u := &model.User{}
-		err = model.User_DecodeInto(iter.cols, row, u)
+		err = DecodeInto(iter.cols, row, u)
 		if err != nil {
 			return fmt.Errorf("Intos.iter: %w", err)
 		}
@@ -353,6 +419,20 @@ func (iter *userIterator) Intos(into *[]*model.User) error {
 	}
 
 	return nil
+}
+
+func (iter *userIterator) IntoDecodable(into Decodable) error {
+	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("User not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *userIterator) IntosDecodable(into interface{}) error {
+	return intosDecodable(iter.RowIterator, iter.cols, into)
 }
 
 func (iter *userIterator) IntoAny(into interface{}) error {

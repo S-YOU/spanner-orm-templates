@@ -241,27 +241,11 @@ func (b *{{$lname}}Builder) Query(ctx context.Context) *{{$lname}}Iterator {
 }
 
 func (iter *{{$lname}}Iterator) Into(into *model.{{.Name}}) error {
-	defer iter.Stop()
-
-	row, err := iter.Next()
-	if err != nil {
-		if err == iterator.Done {
-			return apierrors.ErrNotFound.Swrapf("{{.Name}} not found: %w", ErrNotFound)
-		}
-		return fmt.Errorf("into.iter: %w", err)
-	}
-
-	err = model.{{ .Name }}_DecodeInto(iter.cols, row, into)
-	if err != nil {
-		return fmt.Errorf("into.decoder: %w", err)
-	}
-
-	return nil
+	return iter.IntoDecodable(into)
 }
 
 func (iter *{{$lname}}Iterator) Intos(into *[]*model.{{.Name}}) error {
 	defer iter.Stop()
-
 	for {
 		row, err := iter.Next()
 		if err != nil {
@@ -272,7 +256,7 @@ func (iter *{{$lname}}Iterator) Intos(into *[]*model.{{.Name}}) error {
 		}
 
 		{{$short}} := &model.{{.Name}}{}
-		err = model.{{ .Name }}_DecodeInto(iter.cols, row, {{$short}})
+		err = DecodeInto(iter.cols, row, {{$short}})
 		if err != nil {
 			return fmt.Errorf("Intos.iter: %w", err)
 		}
@@ -281,6 +265,20 @@ func (iter *{{$lname}}Iterator) Intos(into *[]*model.{{.Name}}) error {
 	}
 
 	return nil
+}
+
+func (iter *{{$lname}}Iterator) IntoDecodable(into Decodable) error {
+	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
+		if err == ErrNotFound {
+			return apierrors.ErrNotFound.Swrapf("{{.Name}} not found: %w", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (iter *{{$lname}}Iterator) IntosDecodable(into interface{}) error {
+	return intosDecodable(iter.RowIterator, iter.cols, into)
 }
 
 func (iter *{{$lname}}Iterator) IntoAny(into interface{}) error {

@@ -27,6 +27,10 @@ type Repository struct {
 
 type Params = map[string]interface{}
 
+type Decodable interface {
+	ColumnsToPtrs([]string) ([]interface{}, error)
+}
+
 var (
 	ErrNotFound = errors.New("NotFound")
 )
@@ -43,6 +47,69 @@ func getCacheKey(stmt spanner.Statement) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {
+	defer iter.Stop()
+
+	row, err := iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			return ErrNotFound
+		}
+		return fmt.Errorf("intoDecodable.iter: %w", err)
+	}
+
+	if err := DecodeInto(cols, row, into); err != nil {
+		return fmt.Errorf("intoDecodable.DecodeInto: %w", err)
+	}
+
+	return nil
+}
+
+func intosDecodable(iter *spanner.RowIterator, cols []string, intos interface{}) error {
+	defer iter.Stop()
+
+	if reflect.TypeOf(intos).Kind() != reflect.Ptr {
+		return fmt.Errorf("intosDecodable: argument is not pointer")
+	}
+	value := reflect.ValueOf(intos)
+	elem := value.Elem()
+	elemType := reflect.MakeSlice(elem.Type(), 1, 1).Index(0).Type()
+	isPtr := false
+	if elemType.Kind() == reflect.Ptr {
+		elemType = elemType.Elem()
+		isPtr = true
+	}
+
+	for {
+		row, err := iter.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+			return fmt.Errorf("intosDecodable.iter: %w", err)
+		}
+
+		g := reflect.New(elemType)
+		if into, ok := g.Interface().(Decodable); ok {
+			err = DecodeInto(cols, row, into)
+			if err != nil {
+				return fmt.Errorf("intosDecodable.DecodeInto: %w", err)
+			}
+
+			if isPtr {
+				elem = reflect.Append(elem, g)
+			} else {
+				elem = reflect.Append(elem, g.Elem())
+			}
+			value.Elem().Set(elem)
+		} else {
+			return fmt.Errorf("intosDecodable: not Decodable")
+		}
+	}
+
+	return nil
 }
 
 func intoAny(iter *spanner.RowIterator, cols []string, into interface{}) error {
@@ -102,6 +169,21 @@ func intosAnySlice(iter *spanner.RowIterator, cols []string, into interface{}) e
 
 		elem = reflect.Append(elem, g.Elem())
 		value.Elem().Set(elem)
+	}
+
+	return nil
+}
+
+// DecodeInto decodes row into Decodable
+// The decoder is not goroutine-safe. Don't use it concurrently.
+func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
+	ptrs, err := into.ColumnsToPtrs(cols)
+	if err != nil {
+		return err
+	}
+
+	if err := row.Columns(ptrs...); err != nil {
+		return err
 	}
 
 	return nil

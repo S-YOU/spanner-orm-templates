@@ -28,14 +28,9 @@ func UserColumns() []string {
 	}
 }
 
-func (u *User) columnsToPtrs(cols []string, customPtrs map[string]interface{}) ([]interface{}, error) {
+func (u *User) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
-		if val, ok := customPtrs[col]; ok {
-			ret = append(ret, val)
-			continue
-		}
-
 		switch col {
 		case "user_id":
 			ret = append(ret, &u.UserID)
@@ -74,23 +69,6 @@ func (u *User) columnsToValues(cols []string) ([]interface{}, error) {
 	}
 
 	return ret, nil
-}
-
-// User_DecodeInto decodes row into *User
-// The decoder is not goroutine-safe. Don't use it concurrently.
-func User_DecodeInto(cols []string, row *spanner.Row, into *User) error {
-	customPtrs := map[string]interface{}{}
-
-	ptrs, err := into.columnsToPtrs(cols, customPtrs)
-	if err != nil {
-		return err
-	}
-
-	if err := row.Columns(ptrs...); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Insert returns a Mutation to insert a row into a table. If the row already
