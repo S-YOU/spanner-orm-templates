@@ -41,7 +41,9 @@ type UserRepositoryIndexes interface {
 	GetUserByUserID(ctx context.Context, userID string) (*model.User, error)
 	FindUsersByUserIDs(ctx context.Context, userIDs []string) ([]*model.User, error)
 	FindUsersByName(ctx context.Context, name string) ([]*model.User, error)
-	FindUsersByNames(ctx context.Context, ids []string) ([]*model.User, error)
+	FindUsersByNames(ctx context.Context, names []string) ([]*model.User, error)
+	FindUsersByNameAndStatus(ctx context.Context, name string, status int64) ([]*model.User, error)
+	FindUsersByNameAndStatuss(ctx context.Context, names []string, statuss []int64) ([]*model.User, error)
 }
 
 // GetUserByUserID retrieves a row from 'users' as a User.
@@ -73,7 +75,7 @@ type UserGroupRepositoryIndexes interface {
 	GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
 	FindUserGroupsByGroupIDsAndUserIDs(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error)
 	FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error)
-	FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error)
+	FindUserGroupsByUserIDs(ctx context.Context, userIDs []string) ([]*model.UserGroup, error)
 }
 
 // GetUserGroupByGroupIDAndUserID retrieves a row from 'user_groups' as a UserGroup.
@@ -101,7 +103,7 @@ func (ug userGroupRepository) FindUserGroupsByGroupIDsAndUserIDs(ctx context.Con
 	return items, nil
 }
 
-// GetUsersByName retrieves multiple rows from 'users' as a slice of User.
+// FindUsersByName retrieves multiple rows from 'users' as a slice of User.
 // Generated from index 'idx_users_name'.
 func (u userRepository) FindUsersByName(ctx context.Context, name string) ([]*model.User, error) {
 	user := []*model.User{}
@@ -115,17 +117,41 @@ func (u userRepository) FindUsersByName(ctx context.Context, name string) ([]*mo
 }
 
 // FindUsersByNames retrieves multiple rows from 'users' as []*model.User.
-// Generated from unique index 'idx_users_name'.
-func (u userRepository) FindUsersByNames(ctx context.Context, ids []string) ([]*model.User, error) {
+// Generated from index 'idx_users_name'.
+func (u userRepository) FindUsersByNames(ctx context.Context, names []string) ([]*model.User, error) {
 	var items []*model.User
-	if err := u.Builder().Where("name IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := u.Builder().Where("name IN UNNEST(@arg0)", Params{"arg0": names}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
 	return items, nil
 }
 
-// GetUserGroupsByUserID retrieves multiple rows from 'user_groups' as a slice of UserGroup.
+// FindUsersByNameAndStatus retrieves multiple rows from 'users' as a slice of User.
+// Generated from index 'idx_users_name_status'.
+func (u userRepository) FindUsersByNameAndStatus(ctx context.Context, name string, status int64) ([]*model.User, error) {
+	user := []*model.User{}
+	if err := u.Builder().
+		Where("name = @param0 AND status = @param1", Params{"param0": name, "param1": status}).
+		Query(ctx).Intos(&user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// FindUsersByNameAndStatuss retrieves multiple rows from 'users' as []*model.User.
+// Generated from index 'idx_users_name_status'.
+func (u userRepository) FindUsersByNameAndStatuss(ctx context.Context, names []string, statuss []int64) ([]*model.User, error) {
+	var items []*model.User
+	if err := u.Builder().Where("name IN UNNEST(@arg0) AND status IN UNNEST(@arg1)", Params{"arg0": names, "arg1": statuss}).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// FindUserGroupsByUserID retrieves multiple rows from 'user_groups' as a slice of UserGroup.
 // Generated from index 'idx_group_users_user_id'.
 func (ug userGroupRepository) FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error) {
 	userGroup := []*model.UserGroup{}
@@ -139,10 +165,10 @@ func (ug userGroupRepository) FindUserGroupsByUserID(ctx context.Context, userID
 }
 
 // FindUserGroupsByUserIDs retrieves multiple rows from 'user_groups' as []*model.UserGroup.
-// Generated from unique index 'idx_group_users_user_id'.
-func (ug userGroupRepository) FindUserGroupsByUserIDs(ctx context.Context, ids []string) ([]*model.UserGroup, error) {
+// Generated from index 'idx_group_users_user_id'.
+func (ug userGroupRepository) FindUserGroupsByUserIDs(ctx context.Context, userIDs []string) ([]*model.UserGroup, error) {
 	var items []*model.UserGroup
-	if err := ug.Builder().Where("user_id IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := ug.Builder().Where("user_id IN UNNEST(@arg0)", Params{"arg0": userIDs}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 

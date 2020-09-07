@@ -41,7 +41,9 @@ type UserRepositoryIndexesCached interface {
 	GetUserByUserIDCached(ctx context.Context, userID string) (*model.User, error)
 	FindUsersByUserIDsCached(ctx context.Context, userIDs []string) ([]*model.User, error)
 	FindUsersByNameCached(ctx context.Context, name string) ([]*model.User, error)
-	FindUsersByNamesCached(ctx context.Context, ids []string) ([]*model.User, error)
+	FindUsersByNamesCached(ctx context.Context, names []string) ([]*model.User, error)
+	FindUsersByNameAndStatusCached(ctx context.Context, name string, status int64) ([]*model.User, error)
+	FindUsersByNameAndStatussCached(ctx context.Context, names []string, statuss []int64) ([]*model.User, error)
 }
 
 // GetUserByUserIDCached retrieves a row from cache or 'users' as a User.
@@ -73,7 +75,7 @@ type UserGroupRepositoryIndexesCached interface {
 	GetUserGroupByGroupIDAndUserIDCached(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
 	FindUserGroupsByGroupIDsAndUserIDsCached(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error)
 	FindUserGroupsByUserIDCached(ctx context.Context, userID string) ([]*model.UserGroup, error)
-	FindUserGroupsByUserIDsCached(ctx context.Context, ids []string) ([]*model.UserGroup, error)
+	FindUserGroupsByUserIDsCached(ctx context.Context, userIDs []string) ([]*model.UserGroup, error)
 }
 
 // GetUserGroupByGroupIDAndUserIDCached retrieves a row from cache or 'user_groups' as a UserGroup.
@@ -116,9 +118,33 @@ func (u userRepository) FindUsersByNameCached(ctx context.Context, name string) 
 
 // FindUsersByNamesCached retrieves multiple rows from 'users' or from cache as []*model.User.
 // Generated from unique index 'idx_users_name'.
-func (u userRepository) FindUsersByNamesCached(ctx context.Context, ids []string) ([]*model.User, error) {
+func (u userRepository) FindUsersByNamesCached(ctx context.Context, names []string) ([]*model.User, error) {
 	var items []*model.User
-	if err := u.Builder().Where("name IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
+	if err := u.Builder().Where("name IN UNNEST(@arg0)", Params{"arg0": names}).QueryCachedIntos(ctx, &items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// GetUsersByNameAndStatusCached retrieves multiple rows from cache or 'users' as a slice of User.
+// Generated from index 'idx_users_name_status'.
+func (u userRepository) FindUsersByNameAndStatusCached(ctx context.Context, name string, status int64) ([]*model.User, error) {
+	user := []*model.User{}
+	if err := u.Builder().
+		Where("name = @param0 AND status = @param1", Params{"param0": name, "param1": status}).
+		QueryCachedIntos(ctx, &user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// FindUsersByNameAndStatussCached retrieves multiple rows from 'users' or from cache as []*model.User.
+// Generated from unique index 'idx_users_name_status'.
+func (u userRepository) FindUsersByNameAndStatussCached(ctx context.Context, names []string, statuss []int64) ([]*model.User, error) {
+	var items []*model.User
+	if err := u.Builder().Where("name IN UNNEST(@arg0) AND status IN UNNEST(@arg1)", Params{"arg0": names, "arg1": statuss}).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 
@@ -140,9 +166,9 @@ func (ug userGroupRepository) FindUserGroupsByUserIDCached(ctx context.Context, 
 
 // FindUserGroupsByUserIDsCached retrieves multiple rows from 'user_groups' or from cache as []*model.UserGroup.
 // Generated from unique index 'idx_group_users_user_id'.
-func (ug userGroupRepository) FindUserGroupsByUserIDsCached(ctx context.Context, ids []string) ([]*model.UserGroup, error) {
+func (ug userGroupRepository) FindUserGroupsByUserIDsCached(ctx context.Context, userIDs []string) ([]*model.UserGroup, error) {
 	var items []*model.UserGroup
-	if err := ug.Builder().Where("user_id IN UNNEST(?)", ids).QueryCachedIntos(ctx, &items); err != nil {
+	if err := ug.Builder().Where("user_id IN UNNEST(@arg0)", Params{"arg0": userIDs}).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 

@@ -1,20 +1,20 @@
 {{- $short := (shortname .Type.Name "err" "sqlstr" "db" "q" "res" .Fields) -}}
 {{- $name := (print (goparamname .Type.Name ) "Repository") -}}
 {{- $table := (.Type.Table.TableName) -}}
+{{- $typeName := .Type.Name -}}
 {{- $database := (print .Type.Name "Repository") -}}
 {{- $lname := (goparamname .Type.Name) -}}
-{{- $idx0 := (index .Fields 0) }}
 
 {{- if not .Index.IsUnique }}
 
-// Get{{ .FuncName }} retrieves multiple rows from '{{ $table }}' as a slice of {{ .Type.Name }}.
+// Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }} retrieves multiple rows from '{{ $table }}' as a slice of {{ .Type.Name }}.
 // Generated from index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Find{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
+func ({{$short}} {{$name}}) Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := []*model.{{ .Type.Name }}{}
 	if err := {{$short}}.Builder().
 		Where("{{ colnamesquery .Fields " AND " }}", Params{
 		{{- range $i, $f := .Fields -}}
-			{{- if (gt $i 0) }}, {{ end -}}
+			{{- if $i }}, {{ end -}}
 			"param{{ $i }}": {{ goparamname $f.Name }}
 		{{- end}}}).
 		Query(ctx).Intos(&{{ $lname }}); err != nil {
@@ -32,7 +32,7 @@ func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist
 	if err := {{$short}}.Builder().
 		Where("{{ colnamesquery .Fields " AND " }}", Params{
 		{{- range $i, $f := .Fields -}}
-			{{- if (gt $i 0) }}, {{- end }}
+			{{- if $i }}, {{- end }}
 			"param{{ $i }}": {{ goparamname $f.Name }}
 		{{- end}}}).
 		Query(ctx).Into({{ $lname }}); err != nil {
@@ -43,16 +43,17 @@ func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist
 }
 {{- end }}
 
-{{- if eq (len .Fields) 1 }}
-
-// Find{{.FuncName}}s retrieves multiple rows from '{{ $table }}' as []*model.{{ .Type.Name }}.
-// Generated from unique index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Find{{.FuncName}}s(ctx context.Context, ids []{{$idx0.Type}}) ([]*model.{{ .Type.Name }}, error) {
+// Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}s retrieves multiple rows from '{{ $table }}' as []*model.{{ .Type.Name }}.
+// Generated from index '{{ .Index.IndexName }}'.
+func ({{$short}} {{$name}}) Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}s(ctx context.Context{{- range .Fields }}, {{goparamname .Name}}s []{{.Type}}{{end}}) ([]*model.{{ .Type.Name }}, error) {
 	var items []*model.{{ .Type.Name }}
-	if err := {{$short}}.Builder().Where("{{colname $idx0.Col}} IN UNNEST(?)", ids).Query(ctx).Intos(&items); err != nil {
+	if err := {{$short}}.Builder().Where("{{- range $i, $f := .Fields }}{{ if $i }} AND {{ end }}{{colname $f.Col}} IN UNNEST(@arg{{$i}}){{ end -}}", Params{
+	{{- range $i, $f := .Fields -}}
+		{{- if $i }}, {{ end -}}
+		"arg{{ $i }}": {{ goparamname $f.Name }}s
+	{{- end}}}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
 	return items, nil
 }
-{{- end -}}

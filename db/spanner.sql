@@ -6,6 +6,7 @@ CREATE TABLE `users` (
   updated_at           TIMESTAMP NOT NULL,
 ) PRIMARY KEY(user_id);
 CREATE INDEX idx_users_name ON users(name);
+CREATE INDEX idx_users_name_status ON users(name,status);
 
 CREATE TABLE `groups` (
   group_id    STRING(36) NOT NULL,
