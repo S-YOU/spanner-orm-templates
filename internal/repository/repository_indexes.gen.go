@@ -43,7 +43,7 @@ type UserRepositoryIndexes interface {
 	FindUsersByName(ctx context.Context, name string) ([]*model.User, error)
 	FindUsersByNames(ctx context.Context, names []string) ([]*model.User, error)
 	FindUsersByNameAndStatus(ctx context.Context, name string, status int64) ([]*model.User, error)
-	FindUsersByNameAndStatuss(ctx context.Context, names []string, statuss []int64) ([]*model.User, error)
+	FindUsersByNamesAndStatuses(ctx context.Context, names []string, statuses []int64) ([]*model.User, error)
 }
 
 // GetUserByUserID retrieves a row from 'users' as a User.
@@ -140,11 +140,11 @@ func (u userRepository) FindUsersByNameAndStatus(ctx context.Context, name strin
 	return user, nil
 }
 
-// FindUsersByNameAndStatuss retrieves multiple rows from 'users' as []*model.User.
+// FindUsersByNamesAndStatuses retrieves multiple rows from 'users' as []*model.User.
 // Generated from index 'idx_users_name_status'.
-func (u userRepository) FindUsersByNameAndStatuss(ctx context.Context, names []string, statuss []int64) ([]*model.User, error) {
+func (u userRepository) FindUsersByNamesAndStatuses(ctx context.Context, names []string, statuses []int64) ([]*model.User, error) {
 	var items []*model.User
-	if err := u.Builder().Where("name IN UNNEST(@arg0) AND status IN UNNEST(@arg1)", Params{"arg0": names, "arg1": statuss}).Query(ctx).Intos(&items); err != nil {
+	if err := u.Builder().Where("name IN UNNEST(@arg0) AND status IN UNNEST(@arg1)", Params{"arg0": names, "arg1": statuses}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 

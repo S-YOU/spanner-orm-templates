@@ -1,0 +1,6 @@
+- singular: bonus
+  plural: bonuses
+- singular: UserID
+  plural: UserIDs
+- singular: GroupID
+  plural: GroupIDs

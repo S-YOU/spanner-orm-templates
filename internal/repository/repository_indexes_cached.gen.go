@@ -43,7 +43,7 @@ type UserRepositoryIndexesCached interface {
 	FindUsersByNameCached(ctx context.Context, name string) ([]*model.User, error)
 	FindUsersByNamesCached(ctx context.Context, names []string) ([]*model.User, error)
 	FindUsersByNameAndStatusCached(ctx context.Context, name string, status int64) ([]*model.User, error)
-	FindUsersByNameAndStatussCached(ctx context.Context, names []string, statuss []int64) ([]*model.User, error)
+	FindUsersByNamesAndStatusesCached(ctx context.Context, names []string, statuses []int64) ([]*model.User, error)
 }
 
 // GetUserByUserIDCached retrieves a row from cache or 'users' as a User.
@@ -140,11 +140,11 @@ func (u userRepository) FindUsersByNameAndStatusCached(ctx context.Context, name
 	return user, nil
 }
 
-// FindUsersByNameAndStatussCached retrieves multiple rows from 'users' or from cache as []*model.User.
+// FindUsersByNamesAndStatusesCached retrieves multiple rows from 'users' or from cache as []*model.User.
 // Generated from unique index 'idx_users_name_status'.
-func (u userRepository) FindUsersByNameAndStatussCached(ctx context.Context, names []string, statuss []int64) ([]*model.User, error) {
+func (u userRepository) FindUsersByNamesAndStatusesCached(ctx context.Context, names []string, statuses []int64) ([]*model.User, error) {
 	var items []*model.User
-	if err := u.Builder().Where("name IN UNNEST(@arg0) AND status IN UNNEST(@arg1)", Params{"arg0": names, "arg1": statuss}).QueryCachedIntos(ctx, &items); err != nil {
+	if err := u.Builder().Where("name IN UNNEST(@arg0) AND status IN UNNEST(@arg1)", Params{"arg0": names, "arg1": statuses}).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
 

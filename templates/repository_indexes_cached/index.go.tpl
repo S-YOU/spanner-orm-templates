@@ -8,9 +8,9 @@
 
 {{- if not .Index.IsUnique }}
 
-// Get{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Cached retrieves multiple rows from cache or '{{ $table }}' as a slice of {{ .Type.Name }}.
+// Get{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Cached retrieves multiple rows from cache or '{{ $table }}' as a slice of {{ .Type.Name }}.
 // Generated from index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Cached(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
+func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Cached(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := []*model.{{ .Type.Name }}{}
 	if err := {{$short}}.Builder().
 		Where("{{ colnamesquery .Fields " AND " }}", Params{
@@ -44,14 +44,14 @@ func ({{$short}} {{$name}}) Get{{ .FuncName }}Cached(ctx context.Context{{ gopar
 }
 {{- end }}
 
-// Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}sCached retrieves multiple rows from '{{ $table }}' or from cache as []*model.{{ .Type.Name }}.
+// Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{pluralize .Name }}{{ end }}Cached retrieves multiple rows from '{{ $table }}' or from cache as []*model.{{ .Type.Name }}.
 // Generated from unique index '{{ .Index.IndexName }}'.
-func ({{$short}} {{$name}}) Find{{$typeName}}sBy{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}sCached(ctx context.Context{{- range .Fields }}, {{goparamname .Name}}s []{{.Type}}{{end}}) ([]*model.{{ .Type.Name }}, error) {
+func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{pluralize .Name }}{{ end }}Cached(ctx context.Context{{- range .Fields }}, {{goparamname (pluralize .Name)}} []{{.Type}}{{end}}) ([]*model.{{ .Type.Name }}, error) {
 	var items []*model.{{ .Type.Name }}
 	if err := {{$short}}.Builder().Where("{{- range $i, $f := .Fields }}{{ if $i }} AND {{ end }}{{colname $f.Col}} IN UNNEST(@arg{{$i}}){{ end -}}", Params{
 	{{- range $i, $f := .Fields -}}
 		{{- if $i }}, {{ end -}}
-		"arg{{ $i }}": {{ goparamname $f.Name }}s
+		"arg{{ $i }}": {{goparamname (pluralize .Name)}}
 	{{- end}}}).QueryCachedIntos(ctx, &items); err != nil {
 		return nil, err
 	}
