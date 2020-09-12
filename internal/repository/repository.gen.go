@@ -56,7 +56,7 @@ func intosDecodable(iter *spanner.RowIterator, cols []string, intos interface{})
 	}
 	value := reflect.ValueOf(intos)
 	elem := value.Elem()
-	elemType := reflect.MakeSlice(elem.Type(), 1, 1).Index(0).Type()
+	elemType := elem.Type().Elem()
 	isPtr := false
 	if elemType.Kind() == reflect.Ptr {
 		elemType = elemType.Elem()
@@ -84,11 +84,11 @@ func intosDecodable(iter *spanner.RowIterator, cols []string, intos interface{})
 			} else {
 				elem = reflect.Append(elem, g.Elem())
 			}
-			value.Elem().Set(elem)
 		} else {
 			return fmt.Errorf("intosDecodable: not Decodable")
 		}
 	}
+	value.Elem().Set(elem)
 
 	return nil
 }
@@ -131,7 +131,7 @@ func intosAnySlice(iter *spanner.RowIterator, cols []string, into interface{}) e
 	}
 	value := reflect.ValueOf(into)
 	elem := value.Elem()
-	elemType := reflect.MakeSlice(elem.Type(), 1, 1).Index(0).Type()
+	elemType := elem.Type().Elem()
 
 	for {
 		row, err := iter.Next()
@@ -149,8 +149,8 @@ func intosAnySlice(iter *spanner.RowIterator, cols []string, into interface{}) e
 		}
 
 		elem = reflect.Append(elem, g.Elem())
-		value.Elem().Set(elem)
 	}
+	value.Elem().Set(elem)
 
 	return nil
 }
