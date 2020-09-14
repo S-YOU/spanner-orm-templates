@@ -323,18 +323,38 @@ func (g *groupRepository) Builder() *groupBuilder {
 	}
 }
 
-func (b *groupBuilder) Select(s string) *groupBuilder {
-	b.b.Select(s)
+func (b *groupBuilder) From(s string) *groupBuilder {
+	b.b.From(s)
 	return b
 }
 
-func (b *groupBuilder) Join(s string) *groupBuilder {
-	b.b.Join(s)
+func (b *groupBuilder) Select(s string, cols ...string) *groupBuilder {
+	b.b.Select(s, cols...)
+	return b
+}
+
+func (b *groupBuilder) Join(s string, joinType ...string) *groupBuilder {
+	b.b.Join(s, joinType...)
 	return b
 }
 
 func (b *groupBuilder) Where(s string, args ...interface{}) *groupBuilder {
 	b.b.Where(s, args...)
+	return b
+}
+
+func (b *groupBuilder) GroupBy(s string) *groupBuilder {
+	b.b.GroupBy(s)
+	return b
+}
+
+func (b *groupBuilder) Having(s string, args ...interface{}) *groupBuilder {
+	b.b.Having(s, args...)
+	return b
+}
+
+func (b *groupBuilder) TableSample(s string) *groupBuilder {
+	b.b.TableSample(s)
 	return b
 }
 
@@ -562,18 +582,38 @@ func (u *userRepository) Builder() *userBuilder {
 	}
 }
 
-func (b *userBuilder) Select(s string) *userBuilder {
-	b.b.Select(s)
+func (b *userBuilder) From(s string) *userBuilder {
+	b.b.From(s)
 	return b
 }
 
-func (b *userBuilder) Join(s string) *userBuilder {
-	b.b.Join(s)
+func (b *userBuilder) Select(s string, cols ...string) *userBuilder {
+	b.b.Select(s, cols...)
+	return b
+}
+
+func (b *userBuilder) Join(s string, joinType ...string) *userBuilder {
+	b.b.Join(s, joinType...)
 	return b
 }
 
 func (b *userBuilder) Where(s string, args ...interface{}) *userBuilder {
 	b.b.Where(s, args...)
+	return b
+}
+
+func (b *userBuilder) GroupBy(s string) *userBuilder {
+	b.b.GroupBy(s)
+	return b
+}
+
+func (b *userBuilder) Having(s string, args ...interface{}) *userBuilder {
+	b.b.Having(s, args...)
+	return b
+}
+
+func (b *userBuilder) TableSample(s string) *userBuilder {
+	b.b.TableSample(s)
 	return b
 }
 
@@ -813,18 +853,38 @@ func (ug *userGroupRepository) Builder() *userGroupBuilder {
 	}
 }
 
-func (b *userGroupBuilder) Select(s string) *userGroupBuilder {
-	b.b.Select(s)
+func (b *userGroupBuilder) From(s string) *userGroupBuilder {
+	b.b.From(s)
 	return b
 }
 
-func (b *userGroupBuilder) Join(s string) *userGroupBuilder {
-	b.b.Join(s)
+func (b *userGroupBuilder) Select(s string, cols ...string) *userGroupBuilder {
+	b.b.Select(s, cols...)
+	return b
+}
+
+func (b *userGroupBuilder) Join(s string, joinType ...string) *userGroupBuilder {
+	b.b.Join(s, joinType...)
 	return b
 }
 
 func (b *userGroupBuilder) Where(s string, args ...interface{}) *userGroupBuilder {
 	b.b.Where(s, args...)
+	return b
+}
+
+func (b *userGroupBuilder) GroupBy(s string) *userGroupBuilder {
+	b.b.GroupBy(s)
+	return b
+}
+
+func (b *userGroupBuilder) Having(s string, args ...interface{}) *userGroupBuilder {
+	b.b.Having(s, args...)
+	return b
+}
+
+func (b *userGroupBuilder) TableSample(s string) *userGroupBuilder {
+	b.b.TableSample(s)
 	return b
 }
 

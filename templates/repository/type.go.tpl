@@ -163,18 +163,38 @@ func ({{$short}} *{{$name}}) Builder() *{{$lname}}Builder {
 	}
 }
 
-func (b *{{$lname}}Builder) Select(s string) *{{$lname}}Builder {
-	b.b.Select(s)
+func (b *{{$lname}}Builder) From(s string) *{{$lname}}Builder {
+	b.b.From(s)
 	return b
 }
 
-func (b *{{$lname}}Builder) Join(s string) *{{$lname}}Builder {
-	b.b.Join(s)
+func (b *{{$lname}}Builder) Select(s string, cols ...string) *{{$lname}}Builder {
+	b.b.Select(s, cols...)
+	return b
+}
+
+func (b *{{$lname}}Builder) Join(s string, joinType ...string) *{{$lname}}Builder {
+	b.b.Join(s, joinType...)
 	return b
 }
 
 func (b *{{$lname}}Builder) Where(s string, args ...interface{}) *{{$lname}}Builder {
 	b.b.Where(s, args...)
+	return b
+}
+
+func (b *{{$lname}}Builder) GroupBy(s string) *{{$lname}}Builder {
+	b.b.GroupBy(s)
+	return b
+}
+
+func (b *{{$lname}}Builder) Having(s string, args ...interface{}) *{{$lname}}Builder {
+	b.b.Having(s, args...)
+	return b
+}
+
+func (b *{{$lname}}Builder) TableSample(s string) *{{$lname}}Builder {
+	b.b.TableSample(s)
 	return b
 }
 
