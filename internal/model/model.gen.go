@@ -4,27 +4,9 @@ package model
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/s-you/yo-templates/internal/util"
 )
 
 type H = map[string]interface{}
-
-// Group represents a row from 'groups'.
-type Group struct {
-	GroupID   string    `spanner:"group_id" json:"groupID"`
-	Name      string    `spanner:"name" json:"name"`
-	CreatedAt time.Time `spanner:"created_at" json:"createdAt"`
-	UpdatedAt time.Time `spanner:"updated_at" json:"updatedAt"`
-}
-
-func (g *Group) SetIdentity() (err error) {
-	if g.GroupID == "" {
-		g.GroupID, err = util.NewUUID()
-	}
-	return nil
-}
 
 func GroupPrimaryKeys() []string {
 	return []string{
@@ -78,22 +60,6 @@ func (g *Group) columnsToValues(cols []string) ([]interface{}, error) {
 	}
 
 	return ret, nil
-}
-
-// User represents a row from 'users'.
-type User struct {
-	UserID    string    `spanner:"user_id" json:"userID"`
-	Name      string    `spanner:"name" json:"name"`
-	Status    int64     `spanner:"status" json:"status"`
-	CreatedAt time.Time `spanner:"created_at" json:"createdAt"`
-	UpdatedAt time.Time `spanner:"updated_at" json:"updatedAt"`
-}
-
-func (u *User) SetIdentity() (err error) {
-	if u.UserID == "" {
-		u.UserID, err = util.NewUUID()
-	}
-	return nil
 }
 
 func UserPrimaryKeys() []string {
@@ -153,18 +119,6 @@ func (u *User) columnsToValues(cols []string) ([]interface{}, error) {
 	}
 
 	return ret, nil
-}
-
-// UserGroup represents a row from 'user_groups'.
-type UserGroup struct {
-	GroupID   string    `spanner:"group_id" json:"groupID"`
-	UserID    string    `spanner:"user_id" json:"userID"`
-	CreatedAt time.Time `spanner:"created_at" json:"createdAt"`
-	UpdatedAt time.Time `spanner:"updated_at" json:"updatedAt"`
-}
-
-func (ug *UserGroup) SetIdentity() (err error) {
-	return nil
 }
 
 func UserGroupPrimaryKeys() []string {

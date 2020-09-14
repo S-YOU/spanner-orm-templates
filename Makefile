@@ -22,6 +22,12 @@ yo-gen:
 		--single-file
 	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
 		--from-ddl \
+		--template-path ./templates/model_entities \
+		--inflection-rule-file templates/inflection_rule.yml \
+		--suffix _entities.gen.go \
+		--single-file
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
+		--from-ddl \
 		--template-path ./templates/model_crud \
 		--inflection-rule-file templates/inflection_rule.yml \
 		--suffix _crud.gen.go \

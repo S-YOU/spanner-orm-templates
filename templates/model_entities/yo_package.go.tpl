@@ -3,7 +3,7 @@
 package {{ .Package }}
 
 import (
-	"fmt"
-)
+	"time"
 
-type H = map[string]interface{}
+	"github.com/s-you/yo-templates/internal/util"
+)
