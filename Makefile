@@ -20,6 +20,12 @@ yo-gen:
 		--inflection-rule-file templates/inflection_rule.yml \
 		--suffix .gen.go \
 		--single-file
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
+		--from-ddl \
+		--template-path ./templates/model_crud \
+		--inflection-rule-file templates/inflection_rule.yml \
+		--suffix _crud.gen.go \
+		--single-file
 	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/repository \
 		--from-ddl \
 		--template-path ./templates/repository \

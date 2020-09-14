@@ -3,10 +3,9 @@
 package {{ .Package }}
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/s-you/yo-templates/internal/util"
+	"cloud.google.com/go/spanner"
 )
-
-type H = map[string]interface{}
