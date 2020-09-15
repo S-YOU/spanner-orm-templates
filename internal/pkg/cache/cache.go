@@ -6,6 +6,8 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
+var Default = New()
+
 func New() *Cache {
 	return &Cache{
 		cache: gocache.New(0, 10*time.Minute),

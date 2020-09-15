@@ -13,7 +13,7 @@ func (b *{{$lname}}Builder) QueryCachedInto(ctx context.Context, into **model.{{
 		return err
 	}
 
-	cached := middleware.CacheFromContext(ctx)
+	cached := cache.Default
 	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.(*model.{{.Name}}); ok {
 			return nil
@@ -37,8 +37,8 @@ func (b *{{$lname}}Builder) QueryCachedIntos(ctx context.Context, into *[]*model
 		return err
 	}
 
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
+	cached := cache.Default
+	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.([]*model.{{.Name}}); ok {
 			return nil
 		}
@@ -49,7 +49,7 @@ func (b *{{$lname}}Builder) QueryCachedIntos(ctx context.Context, into *[]*model
 	if err != nil {
 		return err
 	}
-	cache.Set(cacheKey, *into)
+	cached.Set(cacheKey, *into)
 
 	return nil
 }

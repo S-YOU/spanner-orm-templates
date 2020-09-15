@@ -10,8 +10,8 @@ import (
 	"cloud.google.com/go/spanner"
 
 	"github.com/cespare/xxhash"
-	"github.com/s-you/yo-templates/internal/middleware"
 	"github.com/s-you/yo-templates/internal/model"
+	"github.com/s-you/yo-templates/internal/pkg/cache"
 )
 
 func getCacheKey(stmt spanner.Statement) (string, error) {

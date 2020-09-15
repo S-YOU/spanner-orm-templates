@@ -10,8 +10,8 @@ import (
 	"cloud.google.com/go/spanner"
 
 	"github.com/cespare/xxhash"
-	"github.com/s-you/yo-templates/internal/middleware"
 	"github.com/s-you/yo-templates/internal/model"
+	"github.com/s-you/yo-templates/internal/pkg/cache"
 )
 
 func getCacheKey(stmt spanner.Statement) (string, error) {
@@ -35,7 +35,7 @@ func (b *groupBuilder) QueryCachedInto(ctx context.Context, into **model.Group) 
 		return err
 	}
 
-	cached := middleware.CacheFromContext(ctx)
+	cached := cache.Default
 	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.(*model.Group); ok {
 			return nil
@@ -59,8 +59,8 @@ func (b *groupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.Grou
 		return err
 	}
 
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
+	cached := cache.Default
+	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.([]*model.Group); ok {
 			return nil
 		}
@@ -71,7 +71,7 @@ func (b *groupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.Grou
 	if err != nil {
 		return err
 	}
-	cache.Set(cacheKey, *into)
+	cached.Set(cacheKey, *into)
 
 	return nil
 }
@@ -83,7 +83,7 @@ func (b *userBuilder) QueryCachedInto(ctx context.Context, into **model.User) er
 		return err
 	}
 
-	cached := middleware.CacheFromContext(ctx)
+	cached := cache.Default
 	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.(*model.User); ok {
 			return nil
@@ -107,8 +107,8 @@ func (b *userBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.User)
 		return err
 	}
 
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
+	cached := cache.Default
+	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.([]*model.User); ok {
 			return nil
 		}
@@ -119,7 +119,7 @@ func (b *userBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.User)
 	if err != nil {
 		return err
 	}
-	cache.Set(cacheKey, *into)
+	cached.Set(cacheKey, *into)
 
 	return nil
 }
@@ -131,7 +131,7 @@ func (b *userGroupBuilder) QueryCachedInto(ctx context.Context, into **model.Use
 		return err
 	}
 
-	cached := middleware.CacheFromContext(ctx)
+	cached := cache.Default
 	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.(*model.UserGroup); ok {
 			return nil
@@ -155,8 +155,8 @@ func (b *userGroupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.
 		return err
 	}
 
-	cache := middleware.CacheFromContext(ctx)
-	if v, ok := cache.Get(cacheKey); ok {
+	cached := cache.Default
+	if v, ok := cached.Get(cacheKey); ok {
 		if *into, ok = v.([]*model.UserGroup); ok {
 			return nil
 		}
@@ -167,7 +167,7 @@ func (b *userGroupBuilder) QueryCachedIntos(ctx context.Context, into *[]*model.
 	if err != nil {
 		return err
 	}
-	cache.Set(cacheKey, *into)
+	cached.Set(cacheKey, *into)
 
 	return nil
 }
