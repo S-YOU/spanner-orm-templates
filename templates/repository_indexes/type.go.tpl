@@ -29,13 +29,7 @@ func ({{$short}} {{$name}}) Get{{.Name}}By
 {{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end -}}
 (ctx context.Context{{ gocustomparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error) {
 	{{ $lname }} := &model.{{ .Name }}{}
-	if err := {{$short}}.Builder().
-		Where("{{ colnamesquery .PrimaryKeyFields " AND " }}", Params{
-		{{- range $i, $f := .PrimaryKeyFields -}}
-			{{- if $i }}, {{ end -}}
-			"param{{ $i }}": {{ goparamname $f.Name }}
-		{{- end}}}).
-		Query(ctx).Into({{ $lname }}); err != nil {
+	if err := {{$short}}.ReadRowInto(ctx, Key{ {{ gocustomparamlist .PrimaryKeyFields false false }} }, {{$lname}}); err != nil {
 		return nil, err
 	}
 

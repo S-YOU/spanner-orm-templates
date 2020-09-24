@@ -34,6 +34,33 @@ func ({{$short}} *{{$name}}) Query(ctx context.Context, stmt spanner.Statement) 
 	return &{{$lname}}Iterator{iter, model.{{ .Name }}Columns()}
 }
 
+func ({{$short}} *{{$name}}) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
+	cols := model.{{.Name}}Columns()
+	row, err := {{$short}}.client.Single().ReadRow(ctx, "{{ $table }}", key, cols)
+	if err != nil {
+		return err
+	}
+	if err := DecodeInto(cols, row, into); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ({{$short}} *{{$name}}) Read(ctx context.Context, keySet KeySet) *{{$lname}}Iterator {
+	cols := model.{{.Name}}Columns()
+	iter := {{$short}}.client.Single().Read(ctx, "{{ $table }}", keySet, cols)
+
+	return &{{$lname}}Iterator{iter, cols}
+}
+
+func ({{$short}} *{{$name}}) ReadUsingIndex(ctx context.Context, keySet KeySet, index string) *{{$lname}}Iterator {
+	cols := model.{{.Name}}Columns()
+	iter := {{$short}}.client.Single().ReadUsingIndex(ctx, "{{ $table }}", index, keySet, cols)
+
+	return &{{$lname}}Iterator{iter, cols}
+}
+
 func ({{$short}} *{{$name}}) Insert(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
 	if err := {{$lname}}.SetIdentity(); err != nil {
 		return nil, err

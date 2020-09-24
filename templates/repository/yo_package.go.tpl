@@ -20,7 +20,11 @@ type Repository struct {
 	client *spanner.Client
 }
 
-type Params = map[string]interface{}
+type (
+	Params = map[string]interface{}
+	Key    = spanner.Key
+	KeySet = spanner.KeySet
+)
 
 type Decodable interface {
 	ColumnsToPtrs([]string) ([]interface{}, error)

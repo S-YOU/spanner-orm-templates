@@ -25,17 +25,11 @@ func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fi
 }
 {{- else }}
 
-// Find{{ .FuncName }} retrieves a row from '{{ $table }}' as a {{ .Type.Name }}.
+// Get{{ .FuncName }} retrieves a row from '{{ $table }}' as a {{ .Type.Name }}.
 // Generated from unique index '{{ .Index.IndexName }}'.
 func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
-	{{ $lname }} := &model.{{ .Type.Name }}{}
-	if err := {{$short}}.Builder().
-		Where("{{ colnamesquery .Fields " AND " }}", Params{
-		{{- range $i, $f := .Fields -}}
-			{{- if $i }}, {{- end }}
-			"param{{ $i }}": {{ goparamname $f.Name }}
-		{{- end}}}).
-		Query(ctx).Into({{ $lname }}); err != nil {
+	{{ $lname }} := &model.{{ .Name }}{}
+	if err := {{$short}}.ReadRowInto(ctx, Key{ {{ gocustomparamlist .Fields false false }} }, {{$lname}}}); err != nil {
 		return nil, err
 	}
 

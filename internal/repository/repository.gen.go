@@ -20,7 +20,11 @@ type Repository struct {
 	client *spanner.Client
 }
 
-type Params = map[string]interface{}
+type (
+	Params = map[string]interface{}
+	Key    = spanner.Key
+	KeySet = spanner.KeySet
+)
 
 type Decodable interface {
 	ColumnsToPtrs([]string) ([]interface{}, error)
@@ -196,6 +200,33 @@ func (g *groupRepository) Query(ctx context.Context, stmt spanner.Statement) *gr
 	iter := g.client.Single().Query(ctx, stmt)
 
 	return &groupIterator{iter, model.GroupColumns()}
+}
+
+func (g *groupRepository) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
+	cols := model.GroupColumns()
+	row, err := g.client.Single().ReadRow(ctx, "groups", key, cols)
+	if err != nil {
+		return err
+	}
+	if err := DecodeInto(cols, row, into); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *groupRepository) Read(ctx context.Context, keySet KeySet) *groupIterator {
+	cols := model.GroupColumns()
+	iter := g.client.Single().Read(ctx, "groups", keySet, cols)
+
+	return &groupIterator{iter, cols}
+}
+
+func (g *groupRepository) ReadUsingIndex(ctx context.Context, keySet KeySet, index string) *groupIterator {
+	cols := model.GroupColumns()
+	iter := g.client.Single().ReadUsingIndex(ctx, "groups", index, keySet, cols)
+
+	return &groupIterator{iter, cols}
 }
 
 func (g *groupRepository) Insert(ctx context.Context, group *model.Group) (*time.Time, error) {
@@ -457,6 +488,33 @@ func (u *userRepository) Query(ctx context.Context, stmt spanner.Statement) *use
 	return &userIterator{iter, model.UserColumns()}
 }
 
+func (u *userRepository) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
+	cols := model.UserColumns()
+	row, err := u.client.Single().ReadRow(ctx, "users", key, cols)
+	if err != nil {
+		return err
+	}
+	if err := DecodeInto(cols, row, into); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *userRepository) Read(ctx context.Context, keySet KeySet) *userIterator {
+	cols := model.UserColumns()
+	iter := u.client.Single().Read(ctx, "users", keySet, cols)
+
+	return &userIterator{iter, cols}
+}
+
+func (u *userRepository) ReadUsingIndex(ctx context.Context, keySet KeySet, index string) *userIterator {
+	cols := model.UserColumns()
+	iter := u.client.Single().ReadUsingIndex(ctx, "users", index, keySet, cols)
+
+	return &userIterator{iter, cols}
+}
+
 func (u *userRepository) Insert(ctx context.Context, user *model.User) (*time.Time, error) {
 	if err := user.SetIdentity(); err != nil {
 		return nil, err
@@ -714,6 +772,33 @@ func (ug *userGroupRepository) Query(ctx context.Context, stmt spanner.Statement
 	iter := ug.client.Single().Query(ctx, stmt)
 
 	return &userGroupIterator{iter, model.UserGroupColumns()}
+}
+
+func (ug *userGroupRepository) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
+	cols := model.UserGroupColumns()
+	row, err := ug.client.Single().ReadRow(ctx, "user_groups", key, cols)
+	if err != nil {
+		return err
+	}
+	if err := DecodeInto(cols, row, into); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ug *userGroupRepository) Read(ctx context.Context, keySet KeySet) *userGroupIterator {
+	cols := model.UserGroupColumns()
+	iter := ug.client.Single().Read(ctx, "user_groups", keySet, cols)
+
+	return &userGroupIterator{iter, cols}
+}
+
+func (ug *userGroupRepository) ReadUsingIndex(ctx context.Context, keySet KeySet, index string) *userGroupIterator {
+	cols := model.UserGroupColumns()
+	iter := ug.client.Single().ReadUsingIndex(ctx, "user_groups", index, keySet, cols)
+
+	return &userGroupIterator{iter, cols}
 }
 
 func (ug *userGroupRepository) Insert(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
