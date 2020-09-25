@@ -140,7 +140,7 @@ func (ug userGroupRepository) FindUserGroupsByGroupIDsAndUserIDs(ctx context.Con
 }
 
 // FindUsersByNameFast retrieves multiple rows from 'users' as a slice of User.
-// Generated from index 'idx_users_name'.
+// Generated from index 'idx_users_name'. This retrieves only primary key, index key and storing columns
 func (u userRepository) FindUsersByNameFast(ctx context.Context, name string) ([]*model.User, error) {
 	user := []*model.User{}
 	if err := u.ReadUsingIndex(ctx, "idx_users_name", Key{name}).Intos(&user); err != nil {
@@ -175,7 +175,7 @@ func (u userRepository) FindUsersByNames(ctx context.Context, names []string) ([
 }
 
 // FindUsersByNameAndStatusFast retrieves multiple rows from 'users' as a slice of User.
-// Generated from index 'idx_users_name_status'.
+// Generated from index 'idx_users_name_status'. This retrieves only primary key, index key and storing columns
 func (u userRepository) FindUsersByNameAndStatusFast(ctx context.Context, name string, status int64) ([]*model.User, error) {
 	user := []*model.User{}
 	if err := u.ReadUsingIndex(ctx, "idx_users_name_status", Key{name, status}).Intos(&user); err != nil {
@@ -223,7 +223,7 @@ func (ug userGroupRepository) GetUserGroupByGroupID(ctx context.Context, groupID
 }
 
 // GetUserGroupByGroupIDFast retrieves a row from 'user_groups' as a UserGroup.
-// Generated from unique index 'idx_group_users_group_id'.
+// Generated from unique index 'idx_group_users_group_id'. This retrieves only primary key, index key and storing columns
 func (ug userGroupRepository) GetUserGroupByGroupIDFast(ctx context.Context, groupID string) (*model.UserGroup, error) {
 	userGroup := &model.UserGroup{}
 	if err := ug.ReadUsingIndex(ctx, "idx_group_users_group_id", Key{groupID}).Into(userGroup); err != nil {
@@ -245,7 +245,7 @@ func (ug userGroupRepository) FindUserGroupsByGroupIDs(ctx context.Context, grou
 }
 
 // FindUserGroupsByUserIDFast retrieves multiple rows from 'user_groups' as a slice of UserGroup.
-// Generated from index 'idx_group_users_user_id'.
+// Generated from index 'idx_group_users_user_id'. This retrieves only primary key, index key and storing columns
 func (ug userGroupRepository) FindUserGroupsByUserIDFast(ctx context.Context, userID string) ([]*model.UserGroup, error) {
 	userGroup := []*model.UserGroup{}
 	if err := ug.ReadUsingIndex(ctx, "idx_group_users_user_id", Key{userID}).Intos(&userGroup); err != nil {

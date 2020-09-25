@@ -43,7 +43,7 @@ func ({{$short}} *{{$name}}) Read(ctx context.Context, key Key) *{{$lname}}Itera
 }
 
 func ({{$short}} *{{$name}}) ReadUsingIndex(ctx context.Context, index string, key Key) *{{$lname}}Iterator {
-	cols := model.{{.Name}}Columns()
+	cols := model.{{.Name}}ColumnsByIndexName(index)
 	iter := {{$short}}.client.Single().ReadUsingIndex(ctx, "{{ $table }}", index, spanner.KeySets(key), cols)
 
 	return &{{$lname}}Iterator{RowIterator: iter, cols: cols}

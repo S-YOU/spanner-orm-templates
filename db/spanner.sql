@@ -5,7 +5,7 @@ CREATE TABLE `users` (
   created_at           TIMESTAMP NOT NULL,
   updated_at           TIMESTAMP NOT NULL,
 ) PRIMARY KEY(user_id);
-CREATE INDEX idx_users_name ON users(name);
+CREATE INDEX idx_users_name ON users(name) STORING(created_at);
 CREATE INDEX idx_users_name_status ON users(name,status);
 
 CREATE TABLE `groups` (

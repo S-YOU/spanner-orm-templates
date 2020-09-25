@@ -23,6 +23,10 @@ func GroupColumns() []string {
 	}
 }
 
+func GroupColumnsByIndexName(index string) []string {
+	return nil
+}
+
 func (g *Group) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
@@ -76,6 +80,16 @@ func UserColumns() []string {
 		"created_at",
 		"updated_at",
 	}
+}
+
+func UserColumnsByIndexName(index string) []string {
+	switch index {
+	case "idx_users_name":
+		return idx_users_name_cols
+	case "idx_users_name_status":
+		return idx_users_name_status_cols
+	}
+	return nil
 }
 
 func (u *User) ColumnsToPtrs(cols []string) ([]interface{}, error) {
@@ -137,6 +151,16 @@ func UserGroupColumns() []string {
 	}
 }
 
+func UserGroupColumnsByIndexName(index string) []string {
+	switch index {
+	case "idx_group_users_group_id":
+		return idx_group_users_group_id_cols
+	case "idx_group_users_user_id":
+		return idx_group_users_user_id_cols
+	}
+	return nil
+}
+
 func (ug *UserGroup) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
@@ -174,4 +198,17 @@ func (ug *UserGroup) columnsToValues(cols []string) ([]interface{}, error) {
 	}
 
 	return ret, nil
+}
+
+var idx_users_name_cols = []string{
+	"user_id", "name", "created_at",
+}
+var idx_users_name_status_cols = []string{
+	"user_id", "name", "status",
+}
+var idx_group_users_group_id_cols = []string{
+	"group_id", "user_id", "group_id",
+}
+var idx_group_users_user_id_cols = []string{
+	"group_id", "user_id", "user_id",
 }

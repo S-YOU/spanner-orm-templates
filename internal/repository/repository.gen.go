@@ -236,7 +236,7 @@ func (g *groupRepository) Read(ctx context.Context, key Key) *groupIterator {
 }
 
 func (g *groupRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *groupIterator {
-	cols := model.GroupColumns()
+	cols := model.GroupColumnsByIndexName(index)
 	iter := g.client.Single().ReadUsingIndex(ctx, "groups", index, spanner.KeySets(key), cols)
 
 	return &groupIterator{RowIterator: iter, cols: cols}
@@ -554,7 +554,7 @@ func (u *userRepository) Read(ctx context.Context, key Key) *userIterator {
 }
 
 func (u *userRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *userIterator {
-	cols := model.UserColumns()
+	cols := model.UserColumnsByIndexName(index)
 	iter := u.client.Single().ReadUsingIndex(ctx, "users", index, spanner.KeySets(key), cols)
 
 	return &userIterator{RowIterator: iter, cols: cols}
@@ -872,7 +872,7 @@ func (ug *userGroupRepository) Read(ctx context.Context, key Key) *userGroupIter
 }
 
 func (ug *userGroupRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *userGroupIterator {
-	cols := model.UserGroupColumns()
+	cols := model.UserGroupColumnsByIndexName(index)
 	iter := ug.client.Single().ReadUsingIndex(ctx, "user_groups", index, spanner.KeySets(key), cols)
 
 	return &userGroupIterator{RowIterator: iter, cols: cols}

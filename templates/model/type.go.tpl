@@ -19,6 +19,17 @@ func {{ .Name }}Columns() []string {
 	}
 }
 
+func {{ .Name }}ColumnsByIndexName(index string) []string {
+	{{ if .Indexes -}}
+	switch index {
+	{{ range .Indexes -}}
+	case "{{.Index.IndexName}}":
+		return {{.Index.IndexName}}_cols
+	{{ end }}}
+	{{ end -}}
+	return nil
+}
+
 func ({{ $short }} *{{ .Name }}) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
