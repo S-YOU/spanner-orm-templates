@@ -29,7 +29,7 @@ func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fi
 // Generated from unique index '{{ .Index.IndexName }}'.
 func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := &model.{{ .Name }}{}
-	if err := {{$short}}.ReadRowInto(ctx, Key{ {{ gocustomparamlist .Fields false false }} }, {{$lname}}}); err != nil {
+	if err := {{$short}}.Read(ctx, Key{ {{ gocustomparamlist .Fields false false }} }).Into({{$lname}}}); err != nil {
 		return nil, err
 	}
 

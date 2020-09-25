@@ -16,7 +16,7 @@ type GroupRepositoryIndexes interface {
 // Generated from primary key
 func (g groupRepository) GetGroupByGroupID(ctx context.Context, groupID string) (*model.Group, error) {
 	group := &model.Group{}
-	if err := g.ReadRowInto(ctx, Key{groupID}, group); err != nil {
+	if err := g.Read(ctx, Key{groupID}).Into(group); err != nil {
 		return nil, err
 	}
 
@@ -48,7 +48,7 @@ type UserRepositoryIndexes interface {
 // Generated from primary key
 func (u userRepository) GetUserByUserID(ctx context.Context, userID string) (*model.User, error) {
 	user := &model.User{}
-	if err := u.ReadRowInto(ctx, Key{userID}, user); err != nil {
+	if err := u.Read(ctx, Key{userID}).Into(user); err != nil {
 		return nil, err
 	}
 
@@ -78,7 +78,7 @@ type UserGroupRepositoryIndexes interface {
 // Generated from primary key
 func (ug userGroupRepository) GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error) {
 	userGroup := &model.UserGroup{}
-	if err := ug.ReadRowInto(ctx, Key{groupID, userID}, userGroup); err != nil {
+	if err := ug.Read(ctx, Key{groupID, userID}).Into(userGroup); err != nil {
 		return nil, err
 	}
 

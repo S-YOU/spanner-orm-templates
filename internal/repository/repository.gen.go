@@ -202,19 +202,6 @@ func (g *groupRepository) Query(ctx context.Context, stmt spanner.Statement) *gr
 	return &groupIterator{iter, model.GroupColumns()}
 }
 
-func (g *groupRepository) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
-	cols := model.GroupColumns()
-	row, err := g.client.Single().ReadRow(ctx, "groups", key, cols)
-	if err != nil {
-		return err
-	}
-	if err := DecodeInto(cols, row, into); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (g *groupRepository) Read(ctx context.Context, keySet KeySet) *groupIterator {
 	cols := model.GroupColumns()
 	iter := g.client.Single().Read(ctx, "groups", keySet, cols)
@@ -488,19 +475,6 @@ func (u *userRepository) Query(ctx context.Context, stmt spanner.Statement) *use
 	return &userIterator{iter, model.UserColumns()}
 }
 
-func (u *userRepository) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
-	cols := model.UserColumns()
-	row, err := u.client.Single().ReadRow(ctx, "users", key, cols)
-	if err != nil {
-		return err
-	}
-	if err := DecodeInto(cols, row, into); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (u *userRepository) Read(ctx context.Context, keySet KeySet) *userIterator {
 	cols := model.UserColumns()
 	iter := u.client.Single().Read(ctx, "users", keySet, cols)
@@ -772,19 +746,6 @@ func (ug *userGroupRepository) Query(ctx context.Context, stmt spanner.Statement
 	iter := ug.client.Single().Query(ctx, stmt)
 
 	return &userGroupIterator{iter, model.UserGroupColumns()}
-}
-
-func (ug *userGroupRepository) ReadRowInto(ctx context.Context, key Key, into Decodable) error {
-	cols := model.UserGroupColumns()
-	row, err := ug.client.Single().ReadRow(ctx, "user_groups", key, cols)
-	if err != nil {
-		return err
-	}
-	if err := DecodeInto(cols, row, into); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (ug *userGroupRepository) Read(ctx context.Context, keySet KeySet) *userGroupIterator {
