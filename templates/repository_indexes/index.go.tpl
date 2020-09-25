@@ -22,13 +22,11 @@ func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fi
 // Generated from index '{{ .Index.IndexName }}'.
 func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := []*model.{{ .Type.Name }}{}
-	if err := {{$short}}.Builder().
-		Where("{{ colnamesquery .Fields " AND " }}", Params{
+	if err := {{$short}}.Builder().Where("{{ colnamesquery .Fields " AND " }}", Params{
 		{{- range $i, $f := .Fields -}}
 			{{- if $i }}, {{ end -}}
 			"param{{ $i }}": {{ goparamname $f.Name }}
-		{{- end}}}).
-		Query(ctx).Intos(&{{ $lname }}); err != nil {
+		{{- end}}}).Query(ctx).Intos(&{{ $lname }}); err != nil {
 		return nil, err
 	}
 
@@ -40,13 +38,11 @@ func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fi
 // Generated from unique index '{{ .Index.IndexName }}'.
 func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
 	{{ $lname }} := &model.{{ .Type.Name }}{}
-	if err := {{$short}}.Builder().
-		Where("{{ colnamesquery .Fields " AND " }}", Params{
+	if err := {{$short}}.Builder().Where("{{ colnamesquery .Fields " AND " }}", Params{
 		{{- range $i, $f := .Fields -}}
 			{{- if $i }}, {{- end -}}
 			"param{{ $i }}": {{ goparamname $f.Name }}
-		{{- end}}}).
-		Query(ctx).Into({{ $lname }}); err != nil {
+		{{- end}}}).Query(ctx).Into({{ $lname }}); err != nil {
 		return nil, err
 	}
 

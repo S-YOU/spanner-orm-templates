@@ -63,8 +63,7 @@ func ({{$short}} {{$name}}) Find{{pluralize .Name}}By{{- range $i, $f := .Primar
 	{{- range $i, $f := .PrimaryKeyFields -}}
 		{{- if $i }}, {{ end -}}
 		"arg{{ $i }}": {{goparamname (pluralize .Name)}}
-	{{- end}}}).
-		Query(ctx).Intos(&items); err != nil {
+	{{- end}}}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 

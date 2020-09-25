@@ -39,8 +39,7 @@ func (g groupRepository) GetGroupByGroupIDFast(ctx context.Context, groupID stri
 // Generated from primary key
 func (g groupRepository) FindGroupsByGroupIDs(ctx context.Context, groupIDs []string) ([]*model.Group, error) {
 	var items []*model.Group
-	if err := g.Builder().Where("group_id IN UNNEST(@arg0)", Params{"arg0": groupIDs}).
-		Query(ctx).Intos(&items); err != nil {
+	if err := g.Builder().Where("group_id IN UNNEST(@arg0)", Params{"arg0": groupIDs}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
@@ -85,8 +84,7 @@ func (u userRepository) GetUserByUserIDFast(ctx context.Context, userID string) 
 // Generated from primary key
 func (u userRepository) FindUsersByUserIDs(ctx context.Context, userIDs []string) ([]*model.User, error) {
 	var items []*model.User
-	if err := u.Builder().Where("user_id IN UNNEST(@arg0)", Params{"arg0": userIDs}).
-		Query(ctx).Intos(&items); err != nil {
+	if err := u.Builder().Where("user_id IN UNNEST(@arg0)", Params{"arg0": userIDs}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
@@ -131,8 +129,7 @@ func (ug userGroupRepository) GetUserGroupByGroupIDAndUserIDFast(ctx context.Con
 // Generated from primary key
 func (ug userGroupRepository) FindUserGroupsByGroupIDsAndUserIDs(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error) {
 	var items []*model.UserGroup
-	if err := ug.Builder().Where("group_id IN UNNEST(@arg0) AND user_id IN UNNEST(@arg1)", Params{"arg0": groupIDs, "arg1": userIDs}).
-		Query(ctx).Intos(&items); err != nil {
+	if err := ug.Builder().Where("group_id IN UNNEST(@arg0) AND user_id IN UNNEST(@arg1)", Params{"arg0": groupIDs, "arg1": userIDs}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
@@ -154,9 +151,7 @@ func (u userRepository) FindUsersByNameFast(ctx context.Context, name string) ([
 // Generated from index 'idx_users_name'.
 func (u userRepository) FindUsersByName(ctx context.Context, name string) ([]*model.User, error) {
 	user := []*model.User{}
-	if err := u.Builder().
-		Where("name = @param0", Params{"param0": name}).
-		Query(ctx).Intos(&user); err != nil {
+	if err := u.Builder().Where("name = @param0", Params{"param0": name}).Query(ctx).Intos(&user); err != nil {
 		return nil, err
 	}
 
@@ -189,9 +184,7 @@ func (u userRepository) FindUsersByNameAndStatusFast(ctx context.Context, name s
 // Generated from index 'idx_users_name_status'.
 func (u userRepository) FindUsersByNameAndStatus(ctx context.Context, name string, status int64) ([]*model.User, error) {
 	user := []*model.User{}
-	if err := u.Builder().
-		Where("name = @param0 AND status = @param1", Params{"param0": name, "param1": status}).
-		Query(ctx).Intos(&user); err != nil {
+	if err := u.Builder().Where("name = @param0 AND status = @param1", Params{"param0": name, "param1": status}).Query(ctx).Intos(&user); err != nil {
 		return nil, err
 	}
 
@@ -213,9 +206,7 @@ func (u userRepository) FindUsersByNamesAndStatuses(ctx context.Context, names [
 // Generated from unique index 'idx_group_users_group_id'.
 func (ug userGroupRepository) GetUserGroupByGroupID(ctx context.Context, groupID string) (*model.UserGroup, error) {
 	userGroup := &model.UserGroup{}
-	if err := ug.Builder().
-		Where("group_id = @param0", Params{"param0": groupID}).
-		Query(ctx).Into(userGroup); err != nil {
+	if err := ug.Builder().Where("group_id = @param0", Params{"param0": groupID}).Query(ctx).Into(userGroup); err != nil {
 		return nil, err
 	}
 
@@ -259,9 +250,7 @@ func (ug userGroupRepository) FindUserGroupsByUserIDFast(ctx context.Context, us
 // Generated from index 'idx_group_users_user_id'.
 func (ug userGroupRepository) FindUserGroupsByUserID(ctx context.Context, userID string) ([]*model.UserGroup, error) {
 	userGroup := []*model.UserGroup{}
-	if err := ug.Builder().
-		Where("user_id = @param0", Params{"param0": userID}).
-		Query(ctx).Intos(&userGroup); err != nil {
+	if err := ug.Builder().Where("user_id = @param0", Params{"param0": userID}).Query(ctx).Intos(&userGroup); err != nil {
 		return nil, err
 	}
 
