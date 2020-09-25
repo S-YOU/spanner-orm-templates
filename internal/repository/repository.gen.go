@@ -2,18 +2,23 @@
 package repository
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
 	"time"
 
 	"cloud.google.com/go/spanner"
+	"github.com/cespare/xxhash"
 	"google.golang.org/api/iterator"
 
 	"github.com/s-you/apierrors"
 	"github.com/s-you/spannerbuilder"
 	"github.com/s-you/yo-templates/internal/model"
+	"github.com/s-you/yo-templates/internal/pkg/cache"
 )
 
 type Repository struct {
@@ -28,6 +33,12 @@ type (
 
 type Decodable interface {
 	ColumnsToPtrs([]string) ([]interface{}, error)
+}
+
+type queryCache struct {
+	stmt     spanner.Statement
+	duration time.Duration
+	enabled  bool
 }
 
 var (
@@ -174,6 +185,20 @@ func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
 	return nil
 }
 
+func getCacheKey(stmt spanner.Statement) (string, error) {
+	sum64 := xxhash.Sum64String(stmt.SQL)
+	buf := new(bytes.Buffer)
+	cacheKey := make([]byte, 8)
+	binary.LittleEndian.PutUint64(cacheKey, sum64)
+	buf.Write(cacheKey)
+	e := gob.NewEncoder(buf)
+	err := e.Encode(stmt.Params)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 type groupRepository struct {
 	Repository
 }
@@ -186,6 +211,7 @@ type groupBuilder struct {
 type groupIterator struct {
 	*spanner.RowIterator
 	cols []string
+	qc   queryCache
 }
 
 func NewGroupRepository(client *spanner.Client) GroupRepository {
@@ -199,21 +225,21 @@ func NewGroupRepository(client *spanner.Client) GroupRepository {
 func (g *groupRepository) Query(ctx context.Context, stmt spanner.Statement) *groupIterator {
 	iter := g.client.Single().Query(ctx, stmt)
 
-	return &groupIterator{iter, model.GroupColumns()}
+	return &groupIterator{iter, model.GroupColumns(), queryCache{stmt: stmt}}
 }
 
 func (g *groupRepository) Read(ctx context.Context, key Key) *groupIterator {
 	cols := model.GroupColumns()
 	iter := g.client.Single().Read(ctx, "groups", spanner.KeySets(key), cols)
 
-	return &groupIterator{iter, cols}
+	return &groupIterator{RowIterator: iter, cols: cols}
 }
 
-func (g *groupRepository) ReadUsingIndex(ctx context.Context, key Key, index string) *groupIterator {
+func (g *groupRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *groupIterator {
 	cols := model.GroupColumns()
 	iter := g.client.Single().ReadUsingIndex(ctx, "groups", index, spanner.KeySets(key), cols)
 
-	return &groupIterator{iter, cols}
+	return &groupIterator{RowIterator: iter, cols: cols}
 }
 
 func (g *groupRepository) Insert(ctx context.Context, group *model.Group) (*time.Time, error) {
@@ -389,14 +415,58 @@ func (b *groupBuilder) Limit(i int) *groupBuilder {
 func (b *groupBuilder) Query(ctx context.Context) *groupIterator {
 	stmt := b.b.GetSelectStatement()
 	iter := b.client.Single().Query(ctx, stmt)
-	return &groupIterator{iter, b.b.Columns()}
+	return &groupIterator{iter, b.b.Columns(), queryCache{stmt: stmt}}
+}
+
+func (iter *groupIterator) Cached(d time.Duration) *groupIterator {
+	iter.qc.duration = d
+	iter.qc.enabled = true
+	return iter
 }
 
 func (iter *groupIterator) Into(into *model.Group) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if into, ok = v.(*model.Group); ok {
+				return nil
+			}
+		}
+		if err := iter.IntoDecodable(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, into, iter.qc.duration)
+		return nil
+	}
 	return iter.IntoDecodable(into)
 }
 
 func (iter *groupIterator) Intos(into *[]*model.Group) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if *into, ok = v.([]*model.Group); ok {
+				return nil
+			}
+		}
+		if err := iter.intos(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, *into, iter.qc.duration)
+		return nil
+	}
+	return iter.intos(into)
+}
+
+func (iter *groupIterator) intos(into *[]*model.Group) error {
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()
@@ -459,6 +529,7 @@ type userBuilder struct {
 type userIterator struct {
 	*spanner.RowIterator
 	cols []string
+	qc   queryCache
 }
 
 func NewUserRepository(client *spanner.Client) UserRepository {
@@ -472,21 +543,21 @@ func NewUserRepository(client *spanner.Client) UserRepository {
 func (u *userRepository) Query(ctx context.Context, stmt spanner.Statement) *userIterator {
 	iter := u.client.Single().Query(ctx, stmt)
 
-	return &userIterator{iter, model.UserColumns()}
+	return &userIterator{iter, model.UserColumns(), queryCache{stmt: stmt}}
 }
 
 func (u *userRepository) Read(ctx context.Context, key Key) *userIterator {
 	cols := model.UserColumns()
 	iter := u.client.Single().Read(ctx, "users", spanner.KeySets(key), cols)
 
-	return &userIterator{iter, cols}
+	return &userIterator{RowIterator: iter, cols: cols}
 }
 
-func (u *userRepository) ReadUsingIndex(ctx context.Context, key Key, index string) *userIterator {
+func (u *userRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *userIterator {
 	cols := model.UserColumns()
 	iter := u.client.Single().ReadUsingIndex(ctx, "users", index, spanner.KeySets(key), cols)
 
-	return &userIterator{iter, cols}
+	return &userIterator{RowIterator: iter, cols: cols}
 }
 
 func (u *userRepository) Insert(ctx context.Context, user *model.User) (*time.Time, error) {
@@ -662,14 +733,58 @@ func (b *userBuilder) Limit(i int) *userBuilder {
 func (b *userBuilder) Query(ctx context.Context) *userIterator {
 	stmt := b.b.GetSelectStatement()
 	iter := b.client.Single().Query(ctx, stmt)
-	return &userIterator{iter, b.b.Columns()}
+	return &userIterator{iter, b.b.Columns(), queryCache{stmt: stmt}}
+}
+
+func (iter *userIterator) Cached(d time.Duration) *userIterator {
+	iter.qc.duration = d
+	iter.qc.enabled = true
+	return iter
 }
 
 func (iter *userIterator) Into(into *model.User) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if into, ok = v.(*model.User); ok {
+				return nil
+			}
+		}
+		if err := iter.IntoDecodable(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, into, iter.qc.duration)
+		return nil
+	}
 	return iter.IntoDecodable(into)
 }
 
 func (iter *userIterator) Intos(into *[]*model.User) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if *into, ok = v.([]*model.User); ok {
+				return nil
+			}
+		}
+		if err := iter.intos(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, *into, iter.qc.duration)
+		return nil
+	}
+	return iter.intos(into)
+}
+
+func (iter *userIterator) intos(into *[]*model.User) error {
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()
@@ -732,6 +847,7 @@ type userGroupBuilder struct {
 type userGroupIterator struct {
 	*spanner.RowIterator
 	cols []string
+	qc   queryCache
 }
 
 func NewUserGroupRepository(client *spanner.Client) UserGroupRepository {
@@ -745,21 +861,21 @@ func NewUserGroupRepository(client *spanner.Client) UserGroupRepository {
 func (ug *userGroupRepository) Query(ctx context.Context, stmt spanner.Statement) *userGroupIterator {
 	iter := ug.client.Single().Query(ctx, stmt)
 
-	return &userGroupIterator{iter, model.UserGroupColumns()}
+	return &userGroupIterator{iter, model.UserGroupColumns(), queryCache{stmt: stmt}}
 }
 
 func (ug *userGroupRepository) Read(ctx context.Context, key Key) *userGroupIterator {
 	cols := model.UserGroupColumns()
 	iter := ug.client.Single().Read(ctx, "user_groups", spanner.KeySets(key), cols)
 
-	return &userGroupIterator{iter, cols}
+	return &userGroupIterator{RowIterator: iter, cols: cols}
 }
 
-func (ug *userGroupRepository) ReadUsingIndex(ctx context.Context, key Key, index string) *userGroupIterator {
+func (ug *userGroupRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *userGroupIterator {
 	cols := model.UserGroupColumns()
 	iter := ug.client.Single().ReadUsingIndex(ctx, "user_groups", index, spanner.KeySets(key), cols)
 
-	return &userGroupIterator{iter, cols}
+	return &userGroupIterator{RowIterator: iter, cols: cols}
 }
 
 func (ug *userGroupRepository) Insert(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
@@ -947,14 +1063,58 @@ func (b *userGroupBuilder) Limit(i int) *userGroupBuilder {
 func (b *userGroupBuilder) Query(ctx context.Context) *userGroupIterator {
 	stmt := b.b.GetSelectStatement()
 	iter := b.client.Single().Query(ctx, stmt)
-	return &userGroupIterator{iter, b.b.Columns()}
+	return &userGroupIterator{iter, b.b.Columns(), queryCache{stmt: stmt}}
+}
+
+func (iter *userGroupIterator) Cached(d time.Duration) *userGroupIterator {
+	iter.qc.duration = d
+	iter.qc.enabled = true
+	return iter
 }
 
 func (iter *userGroupIterator) Into(into *model.UserGroup) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if into, ok = v.(*model.UserGroup); ok {
+				return nil
+			}
+		}
+		if err := iter.IntoDecodable(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, into, iter.qc.duration)
+		return nil
+	}
 	return iter.IntoDecodable(into)
 }
 
 func (iter *userGroupIterator) Intos(into *[]*model.UserGroup) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if *into, ok = v.([]*model.UserGroup); ok {
+				return nil
+			}
+		}
+		if err := iter.intos(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, *into, iter.qc.duration)
+		return nil
+	}
+	return iter.intos(into)
+}
+
+func (iter *userGroupIterator) intos(into *[]*model.UserGroup) error {
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()

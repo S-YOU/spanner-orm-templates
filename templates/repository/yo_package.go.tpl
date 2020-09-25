@@ -2,18 +2,23 @@
 package {{ .Package }}
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
 	"time"
 
 	"cloud.google.com/go/spanner"
+	"github.com/cespare/xxhash"
 	"google.golang.org/api/iterator"
 
 	"github.com/s-you/apierrors"
 	"github.com/s-you/spannerbuilder"
 	"github.com/s-you/yo-templates/internal/model"
+	"github.com/s-you/yo-templates/internal/pkg/cache"
 )
 
 type Repository struct {
@@ -28,6 +33,12 @@ type (
 
 type Decodable interface {
 	ColumnsToPtrs([]string) ([]interface{}, error)
+}
+
+type queryCache struct {
+	stmt     spanner.Statement
+	duration time.Duration
+	enabled  bool
 }
 
 var (
@@ -172,5 +183,19 @@ func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
 	}
 
 	return nil
+}
+
+func getCacheKey(stmt spanner.Statement) (string, error) {
+	sum64 := xxhash.Sum64String(stmt.SQL)
+	buf := new(bytes.Buffer)
+	cacheKey := make([]byte, 8)
+	binary.LittleEndian.PutUint64(cacheKey, sum64)
+	buf.Write(cacheKey)
+	e := gob.NewEncoder(buf)
+	err := e.Encode(stmt.Params)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 {{- /* */ -}}

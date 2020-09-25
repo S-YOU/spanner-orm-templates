@@ -18,6 +18,7 @@ type {{$lname}}Builder struct {
 type {{$lname}}Iterator struct {
 	*spanner.RowIterator
 	cols []string
+	qc   queryCache
 }
 
 func New{{ $database }}(client *spanner.Client) {{ $database }} {
@@ -31,21 +32,21 @@ func New{{ $database }}(client *spanner.Client) {{ $database }} {
 func ({{$short}} *{{$name}}) Query(ctx context.Context, stmt spanner.Statement) *{{$lname}}Iterator {
 	iter := {{$short}}.client.Single().Query(ctx, stmt)
 
-	return &{{$lname}}Iterator{iter, model.{{ .Name }}Columns()}
+	return &{{$lname}}Iterator{iter, model.{{ .Name }}Columns(), queryCache{stmt: stmt}}
 }
 
 func ({{$short}} *{{$name}}) Read(ctx context.Context, key Key) *{{$lname}}Iterator {
 	cols := model.{{.Name}}Columns()
 	iter := {{$short}}.client.Single().Read(ctx, "{{ $table }}", spanner.KeySets(key), cols)
 
-	return &{{$lname}}Iterator{iter, cols}
+	return &{{$lname}}Iterator{RowIterator: iter, cols: cols}
 }
 
-func ({{$short}} *{{$name}}) ReadUsingIndex(ctx context.Context, key Key, index string) *{{$lname}}Iterator {
+func ({{$short}} *{{$name}}) ReadUsingIndex(ctx context.Context, index string, key Key) *{{$lname}}Iterator {
 	cols := model.{{.Name}}Columns()
 	iter := {{$short}}.client.Single().ReadUsingIndex(ctx, "{{ $table }}", index, spanner.KeySets(key), cols)
 
-	return &{{$lname}}Iterator{iter, cols}
+	return &{{$lname}}Iterator{RowIterator: iter, cols: cols}
 }
 
 func ({{$short}} *{{$name}}) Insert(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
@@ -225,14 +226,58 @@ func (b *{{$lname}}Builder) Limit(i int) *{{$lname}}Builder {
 func (b *{{$lname}}Builder) Query(ctx context.Context) *{{$lname}}Iterator {
 	stmt := b.b.GetSelectStatement()
 	iter := b.client.Single().Query(ctx, stmt)
-	return &{{$lname}}Iterator{iter, b.b.Columns()}
+	return &{{$lname}}Iterator{iter, b.b.Columns(), queryCache{stmt: stmt}}
+}
+
+func (iter *{{$lname}}Iterator) Cached(d time.Duration) *{{$lname}}Iterator {
+	iter.qc.duration = d
+	iter.qc.enabled = true
+	return iter
 }
 
 func (iter *{{$lname}}Iterator) Into(into *model.{{.Name}}) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if into, ok = v.(*model.{{.Name}}); ok {
+				return nil
+			}
+		}
+		if err := iter.IntoDecodable(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, into, iter.qc.duration)
+		return nil
+	}
 	return iter.IntoDecodable(into)
 }
 
 func (iter *{{$lname}}Iterator) Intos(into *[]*model.{{.Name}}) error {
+	if iter.qc.enabled {
+		cacheKey, err := getCacheKey(iter.qc.stmt)
+		if err != nil {
+			return err
+		}
+		cached := cache.Default
+		if v, ok := cached.Get(cacheKey); ok {
+			if *into, ok = v.([]*model.{{.Name}}); ok {
+				return nil
+			}
+		}
+		if err := iter.intos(into); err != nil {
+			return err
+		}
+		cached.Set(cacheKey, *into, iter.qc.duration)
+		return nil
+	}
+	return iter.intos(into)
+}
+
+func (iter *{{$lname}}Iterator) intos(into *[]*model.{{.Name}}) error {
 	defer iter.Stop()
 	for {
 		row, err := iter.Next()

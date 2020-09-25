@@ -6,6 +6,11 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
+const (
+	NoExpiration      time.Duration = -1
+	DefaultExpiration time.Duration = 0
+)
+
 var Default = New()
 
 func New() *Cache {
@@ -22,6 +27,6 @@ func (c *Cache) Get(k string) (interface{}, bool) {
 	return c.cache.Get(k)
 }
 
-func (c *Cache) Set(k string, v interface{}) {
-	c.cache.Set(k, v, gocache.NoExpiration)
+func (c *Cache) Set(k string, v interface{}, d time.Duration) {
+	c.cache.Set(k, v, d)
 }
