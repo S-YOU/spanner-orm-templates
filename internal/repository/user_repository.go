@@ -7,6 +7,3 @@ type UserRepository interface {
 	UserRepositoryIndexesCached
 	UserRepositoryCRUD
 }
-
-//func (u *userRepository) ExampleQuery(ctx context.Context) error {
-//}

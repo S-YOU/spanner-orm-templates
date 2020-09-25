@@ -21,9 +21,10 @@ type Repository struct {
 }
 
 type (
-	Params = map[string]interface{}
-	Key    = spanner.Key
-	KeySet = spanner.KeySet
+	Params   = map[string]interface{}
+	Key      = spanner.Key
+	KeySet   = spanner.KeySet
+	KeyRange = spanner.KeyRange
 )
 
 type Decodable interface {
