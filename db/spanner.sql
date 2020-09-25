@@ -22,4 +22,5 @@ CREATE TABLE `user_groups` (
   updated_at  TIMESTAMP NOT NULL,
 ) PRIMARY KEY(group_id, user_id),
   INTERLEAVE IN PARENT `groups` ON DELETE NO ACTION;
+CREATE UNIQUE INDEX idx_group_users_group_id ON user_groups(group_id);
 CREATE INDEX idx_group_users_user_id ON user_groups(user_id);

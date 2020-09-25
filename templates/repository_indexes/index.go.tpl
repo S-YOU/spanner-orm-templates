@@ -7,6 +7,17 @@
 
 {{- if not .Index.IsUnique }}
 
+// Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Fast retrieves multiple rows from '{{ $table }}' as a slice of {{ .Type.Name }}.
+// Generated from index '{{ .Index.IndexName }}'.
+func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Fast(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
+	{{ $lname }} := []*model.{{ .Type.Name }}{}
+	if err := {{$short}}.ReadUsingIndex(ctx, "{{ .Index.IndexName }}", Key{ {{- goparamlist .Fields false false -}} }).Intos(&{{ $lname }}); err != nil {
+		return nil, err
+	}
+
+	return {{ $lname }}, nil
+}
+
 // Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }} retrieves multiple rows from '{{ $table }}' as a slice of {{ .Type.Name }}.
 // Generated from index '{{ .Index.IndexName }}'.
 func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error) {
@@ -28,8 +39,25 @@ func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{- range $i, $f := .Fi
 // Get{{ .FuncName }} retrieves a row from '{{ $table }}' as a {{ .Type.Name }}.
 // Generated from unique index '{{ .Index.IndexName }}'.
 func ({{$short}} {{$name}}) Get{{ .FuncName }}(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
-	{{ $lname }} := &model.{{ .Name }}{}
-	if err := {{$short}}.Read(ctx, Key{ {{ gocustomparamlist .Fields false false }} }).Into({{$lname}}}); err != nil {
+	{{ $lname }} := &model.{{ .Type.Name }}{}
+	if err := {{$short}}.Builder().
+		Where("{{ colnamesquery .Fields " AND " }}", Params{
+		{{- range $i, $f := .Fields -}}
+			{{- if $i }}, {{- end -}}
+			"param{{ $i }}": {{ goparamname $f.Name }}
+		{{- end}}}).
+		Query(ctx).Into({{ $lname }}); err != nil {
+		return nil, err
+	}
+
+	return {{ $lname }}, nil
+}
+
+// Get{{ .FuncName }}Fast retrieves a row from '{{ $table }}' as a {{ .Type.Name }}.
+// Generated from unique index '{{ .Index.IndexName }}'.
+func ({{$short}} {{$name}}) Get{{ .FuncName }}Fast(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error) {
+	{{ $lname }} := &model.{{ .Type.Name }}{}
+	if err := {{$short}}.ReadUsingIndex(ctx, "{{ .Index.IndexName }}", Key{ {{- gocustomparamlist .Fields false false -}} }).Into({{$lname}}); err != nil {
 		return nil, err
 	}
 
