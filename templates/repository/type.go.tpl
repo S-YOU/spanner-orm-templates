@@ -34,16 +34,16 @@ func ({{$short}} *{{$name}}) Query(ctx context.Context, stmt spanner.Statement) 
 	return &{{$lname}}Iterator{iter, model.{{ .Name }}Columns()}
 }
 
-func ({{$short}} *{{$name}}) Read(ctx context.Context, keySet KeySet) *{{$lname}}Iterator {
+func ({{$short}} *{{$name}}) Read(ctx context.Context, key Key) *{{$lname}}Iterator {
 	cols := model.{{.Name}}Columns()
-	iter := {{$short}}.client.Single().Read(ctx, "{{ $table }}", keySet, cols)
+	iter := {{$short}}.client.Single().Read(ctx, "{{ $table }}", spanner.KeySets(key), cols)
 
 	return &{{$lname}}Iterator{iter, cols}
 }
 
-func ({{$short}} *{{$name}}) ReadUsingIndex(ctx context.Context, keySet KeySet, index string) *{{$lname}}Iterator {
+func ({{$short}} *{{$name}}) ReadUsingIndex(ctx context.Context, key Key, index string) *{{$lname}}Iterator {
 	cols := model.{{.Name}}Columns()
-	iter := {{$short}}.client.Single().ReadUsingIndex(ctx, "{{ $table }}", index, keySet, cols)
+	iter := {{$short}}.client.Single().ReadUsingIndex(ctx, "{{ $table }}", index, spanner.KeySets(key), cols)
 
 	return &{{$lname}}Iterator{iter, cols}
 }
