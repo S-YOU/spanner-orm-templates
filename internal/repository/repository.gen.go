@@ -228,16 +228,16 @@ func (g *groupRepository) Query(ctx context.Context, stmt spanner.Statement) *gr
 	return &groupIterator{iter, model.GroupColumns(), queryCache{stmt: stmt}}
 }
 
-func (g *groupRepository) Read(ctx context.Context, key Key) *groupIterator {
+func (g *groupRepository) Read(ctx context.Context, keySet spanner.KeySet) *groupIterator {
 	cols := model.GroupColumns()
-	iter := g.client.Single().Read(ctx, "groups", spanner.KeySets(key), cols)
+	iter := g.client.Single().Read(ctx, "groups", keySet, cols)
 
 	return &groupIterator{RowIterator: iter, cols: cols}
 }
 
-func (g *groupRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *groupIterator {
+func (g *groupRepository) ReadUsingIndex(ctx context.Context, index string, keySet spanner.KeySet) *groupIterator {
 	cols := model.GroupColumnsByIndexName(index)
-	iter := g.client.Single().ReadUsingIndex(ctx, "groups", index, spanner.KeySets(key), cols)
+	iter := g.client.Single().ReadUsingIndex(ctx, "groups", index, keySet, cols)
 
 	return &groupIterator{RowIterator: iter, cols: cols}
 }
@@ -546,16 +546,16 @@ func (u *userRepository) Query(ctx context.Context, stmt spanner.Statement) *use
 	return &userIterator{iter, model.UserColumns(), queryCache{stmt: stmt}}
 }
 
-func (u *userRepository) Read(ctx context.Context, key Key) *userIterator {
+func (u *userRepository) Read(ctx context.Context, keySet spanner.KeySet) *userIterator {
 	cols := model.UserColumns()
-	iter := u.client.Single().Read(ctx, "users", spanner.KeySets(key), cols)
+	iter := u.client.Single().Read(ctx, "users", keySet, cols)
 
 	return &userIterator{RowIterator: iter, cols: cols}
 }
 
-func (u *userRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *userIterator {
+func (u *userRepository) ReadUsingIndex(ctx context.Context, index string, keySet spanner.KeySet) *userIterator {
 	cols := model.UserColumnsByIndexName(index)
-	iter := u.client.Single().ReadUsingIndex(ctx, "users", index, spanner.KeySets(key), cols)
+	iter := u.client.Single().ReadUsingIndex(ctx, "users", index, keySet, cols)
 
 	return &userIterator{RowIterator: iter, cols: cols}
 }
@@ -864,16 +864,16 @@ func (ug *userGroupRepository) Query(ctx context.Context, stmt spanner.Statement
 	return &userGroupIterator{iter, model.UserGroupColumns(), queryCache{stmt: stmt}}
 }
 
-func (ug *userGroupRepository) Read(ctx context.Context, key Key) *userGroupIterator {
+func (ug *userGroupRepository) Read(ctx context.Context, keySet spanner.KeySet) *userGroupIterator {
 	cols := model.UserGroupColumns()
-	iter := ug.client.Single().Read(ctx, "user_groups", spanner.KeySets(key), cols)
+	iter := ug.client.Single().Read(ctx, "user_groups", keySet, cols)
 
 	return &userGroupIterator{RowIterator: iter, cols: cols}
 }
 
-func (ug *userGroupRepository) ReadUsingIndex(ctx context.Context, index string, key Key) *userGroupIterator {
+func (ug *userGroupRepository) ReadUsingIndex(ctx context.Context, index string, keySet spanner.KeySet) *userGroupIterator {
 	cols := model.UserGroupColumnsByIndexName(index)
-	iter := ug.client.Single().ReadUsingIndex(ctx, "user_groups", index, spanner.KeySets(key), cols)
+	iter := ug.client.Single().ReadUsingIndex(ctx, "user_groups", index, keySet, cols)
 
 	return &userGroupIterator{RowIterator: iter, cols: cols}
 }
