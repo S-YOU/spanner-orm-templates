@@ -10,8 +10,6 @@
 type {{ $database }}Indexes interface {
 	Get{{.Name}}By{{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end -}}
 		(ctx context.Context{{ goparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error)
-	Get{{.Name}}By{{ range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end -}}
-		Fast(ctx context.Context{{ goparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error)
 	Find{{pluralize .Name}}By{{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ pluralize .Name }}{{ end -}}
 		(ctx context.Context{{- range .PrimaryKeyFields }}, {{goparamname (pluralize .Name)}} []{{.Type}}{{end}}) ([]*model.{{ .Name }}, error)
 	{{- range .Indexes -}}
@@ -28,26 +26,12 @@ type {{ $database }}Indexes interface {
 
 // Get{{.Name}}By
 {{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }} retrieves a row from '{{ $table }}' as a {{ .Name }}.
-// Generated from primary key
+// Generated from primary key. This is a fast method that can retrieve all columns
 func ({{$short}} {{$name}}) Get{{.Name}}By
 {{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end -}}
 (ctx context.Context{{ gocustomparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error) {
 	{{ $lname }} := &model.{{ .Name }}{}
 	if err := {{$short}}.Read(ctx, Key{ {{- gocustomparamlist .PrimaryKeyFields false false -}} }).Into({{$lname}}); err != nil {
-		return nil, err
-	}
-
-	return {{ $lname }}, nil
-}
-
-// Get{{.Name}}By
-{{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Fast retrieves a row from '{{ $table }}' as a {{ .Name }}.
-// Generated from primary key
-func ({{$short}} {{$name}}) Get{{.Name}}By
-{{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end -}}
-Fast(ctx context.Context{{ gocustomparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error) {
-	{{ $lname }} := &model.{{ .Name }}{}
-	if err := {{$short}}.Read(ctx, Key{ {{- gocustomparamlist .PrimaryKeyFields false false -}} }).Into({{ $lname }}); err != nil {
 		return nil, err
 	}
 
