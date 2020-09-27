@@ -126,8 +126,8 @@ github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/s-you/apierrors v0.0.0-20200815145538-274c30a720a8 h1:+P87tDm22toXU8i1os8lw/PD1pNjuqrMFYl1B5rFxig=
 github.com/s-you/apierrors v0.0.0-20200815145538-274c30a720a8/go.mod h1:CbEvt71jIhrqFxciTmSThB2NPlTKAjVQLK5lupMNpXM=
-github.com/s-you/spannerbuilder v0.0.1 h1:DPJ1LBpnY/7Qvqep3EFpHRC7vffZOSXcRX49NX6jUHE=
-github.com/s-you/spannerbuilder v0.0.1/go.mod h1:+LPA7ezxwfYNvPedi5JZlphuwOWAM+pDRzAF7sK3Uq0=
+github.com/s-you/spannerbuilder v0.0.2 h1:gADP/TtczgtqNGgNlu+G3l1oj8gwWsXbIo8+RETw7yM=
+github.com/s-you/spannerbuilder v0.0.2/go.mod h1:+LPA7ezxwfYNvPedi5JZlphuwOWAM+pDRzAF7sK3Uq0=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
