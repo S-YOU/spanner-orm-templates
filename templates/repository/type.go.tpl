@@ -1,9 +1,15 @@
-{{- $short := (shortname .Name "err" "res" "sqlstr" "db" "YOLog") -}}
-{{- $table := (.Table.TableName) -}}
-{{- $name := (print (goparamname .Name) "Repository") -}}
-{{- $lname := (goparamname .Name) -}}
-{{- $database := (print .Name "Repository") -}}
-{{- $primaryKeys := .PrimaryKeyFields -}}
+{{- $short := (shortname .Name "err" "res" "sqlstr" "db" "YOLog") }}
+{{- $table := (.Table.TableName) }}
+{{- $name := (print (goparamname .Name) "Repository") }}
+{{- $lname := (goparamname .Name) }}
+{{- $database := (print .Name "Repository") }}
+{{- $primaryKeys := .PrimaryKeyFields }}
+{{- $hasCreatedAt := false }}
+{{- $hasUpdatedAt := false }}
+{{- range .Fields }}
+{{- if eq .Name "CreatedAt"}}{{ $hasCreatedAt = true}}
+{{- else if eq .Name "UpdatedAt"}}{{ $hasUpdatedAt = true}}{{- end }}
+{{- end }}
 {{- $pkey0 := (index .PrimaryKeyFields 0) }}
 
 type {{ $name }} struct {
@@ -53,12 +59,16 @@ func ({{$short}} *{{$name}}) Insert(ctx context.Context, {{$lname}} *model.{{.Na
 	if err := {{$lname}}.SetIdentity(); err != nil {
 		return nil, err
 	}
+{{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		{{$lname}}.CreatedAt = time.Now()
 	}
+{{- end }}
+{{- if $hasUpdatedAt }}
 	if {{$lname}}.UpdatedAt.IsZero() {
 		{{$lname}}.UpdatedAt = time.Now()
 	}
+{{- end }}
 
 	mutations := []*spanner.Mutation{
 		{{$lname}}.Insert(ctx),
@@ -74,12 +84,16 @@ func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *mod
 	if err := {{$lname}}.SetIdentity(); err != nil {
 		return time.Time{}, err
 	}
+{{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		{{$lname}}.CreatedAt = time.Now()
 	}
+{{- end }}
+{{- if $hasUpdatedAt }}
 	if {{$lname}}.UpdatedAt.IsZero() {
 		{{$lname}}.UpdatedAt = time.Now()
 	}
+{{- end }}
 
 	mutations := []*spanner.Mutation{
 		{{$lname}}.InsertOrUpdate(ctx),
@@ -96,10 +110,14 @@ func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Na
 	if {{$lname}}.{{ .Name }} == "" {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
+{{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		return nil, fmt.Errorf("created_at is blank")
 	}
+{{- end }}
+{{- if $hasUpdatedAt }}
 	{{$lname}}.UpdatedAt = time.Now()
+{{- end }}
 
 	mutations := []*spanner.Mutation{
 		{{$lname}}.Update(ctx),
@@ -116,10 +134,14 @@ func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *mode
 	if {{$lname}}.{{ .Name }} == "" {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
+{{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		return nil, fmt.Errorf("created_at is blank")
 	}
+{{- end }}
+{{- if $hasUpdatedAt }}
 	{{$lname}}.UpdatedAt = time.Now()
+{{- end }}
 
 	mutation, err := {{$lname}}.UpdateColumns(ctx, cols...)
 	if err != nil {
@@ -138,10 +160,14 @@ func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{
 	if {{$lname}}.{{ .Name }} == "" {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
+{{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		return nil, fmt.Errorf("created_at is blank")
 	}
+{{- end }}
+{{- if $hasUpdatedAt }}
 	{{$lname}}.UpdatedAt = time.Now()
+{{- end }}
 
 	mutation := {{ $lname }}.UpdateMap(ctx, {{$lname}}Map)
 	mutations := []*spanner.Mutation{mutation}
@@ -157,10 +183,14 @@ func ({{$short}} *{{$name}}) Delete(ctx context.Context, {{$lname}} *model.{{.Na
 	if {{$lname}}.{{ .Name }} == "" {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
+{{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		return nil, fmt.Errorf("created_at is blank")
 	}
+{{- end }}
+{{- if $hasUpdatedAt }}
 	{{$lname}}.UpdatedAt = time.Now()
+{{- end }}
 
 	mutation := {{ $lname }}.Delete(ctx)
 	mutations := []*spanner.Mutation{mutation}
