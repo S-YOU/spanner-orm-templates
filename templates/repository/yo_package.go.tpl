@@ -29,6 +29,7 @@ type (
 	Params   = map[string]interface{}
 	Key      = spanner.Key
 	KeyRange = spanner.KeyRange
+	Row      = *spanner.Row
 )
 
 type Decodable interface {

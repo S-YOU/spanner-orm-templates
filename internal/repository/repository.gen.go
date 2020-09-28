@@ -29,6 +29,7 @@ type (
 	Params   = map[string]interface{}
 	Key      = spanner.Key
 	KeyRange = spanner.KeyRange
+	Row      = *spanner.Row
 )
 
 type Decodable interface {
@@ -424,6 +425,10 @@ func (iter *groupIterator) Cached(d time.Duration) *groupIterator {
 	return iter
 }
 
+func (iter *groupIterator) Do(fn func(row Row) error) error {
+	return iter.RowIterator.Do(fn)
+}
+
 func (iter *groupIterator) Into(into *model.Group) error {
 	if iter.qc.enabled {
 		cacheKey, err := getCacheKey(iter.qc.stmt)
@@ -740,6 +745,10 @@ func (iter *userIterator) Cached(d time.Duration) *userIterator {
 	iter.qc.duration = d
 	iter.qc.enabled = true
 	return iter
+}
+
+func (iter *userIterator) Do(fn func(row Row) error) error {
+	return iter.RowIterator.Do(fn)
 }
 
 func (iter *userIterator) Into(into *model.User) error {
@@ -1070,6 +1079,10 @@ func (iter *userGroupIterator) Cached(d time.Duration) *userGroupIterator {
 	iter.qc.duration = d
 	iter.qc.enabled = true
 	return iter
+}
+
+func (iter *userGroupIterator) Do(fn func(row Row) error) error {
+	return iter.RowIterator.Do(fn)
 }
 
 func (iter *userGroupIterator) Into(into *model.UserGroup) error {

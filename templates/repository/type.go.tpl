@@ -265,6 +265,10 @@ func (iter *{{$lname}}Iterator) Cached(d time.Duration) *{{$lname}}Iterator {
 	return iter
 }
 
+func (iter *{{$lname}}Iterator) Do(fn func(row Row) error) error {
+	return iter.RowIterator.Do(fn)
+}
+
 func (iter *{{$lname}}Iterator) Into(into *model.{{.Name}}) error {
 	if iter.qc.enabled {
 		cacheKey, err := getCacheKey(iter.qc.stmt)
