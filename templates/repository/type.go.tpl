@@ -70,10 +70,7 @@ func ({{$short}} *{{$name}}) Insert(ctx context.Context, {{$lname}} *model.{{.Na
 	}
 {{- end }}
 
-	mutations := []*spanner.Mutation{
-		{{$lname}}.Insert(ctx),
-	}
-	t, err := {{$short}}.client.Apply(ctx, mutations)
+	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Insert()})
 	if err != nil {
 		return nil, err
 	}
@@ -95,10 +92,7 @@ func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *mod
 	}
 {{- end }}
 
-	mutations := []*spanner.Mutation{
-		{{$lname}}.InsertOrUpdate(ctx),
-	}
-	t, err := {{$short}}.client.Apply(ctx, mutations)
+	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -119,10 +113,7 @@ func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Na
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	mutations := []*spanner.Mutation{
-		{{$lname}}.Update(ctx),
-	}
-	t, err := {{$short}}.client.Apply(ctx, mutations)
+	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Update()})
 	if err != nil {
 		return nil, err
 	}
@@ -143,12 +134,11 @@ func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *mode
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	mutation, err := {{$lname}}.UpdateColumns(ctx, cols...)
+	mutation, err := {{$lname}}.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	mutations := []*spanner.Mutation{mutation}
-	t, err := {{$short}}.client.Apply(ctx, mutations)
+	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +159,7 @@ func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	mutation := {{ $lname }}.UpdateMap(ctx, {{$lname}}Map)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := {{$short}}.client.Apply(ctx, mutations)
+	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.UpdateMap({{$lname}}Map)})
 	if err != nil {
 		return nil, err
 	}
@@ -192,9 +180,7 @@ func ({{$short}} *{{$name}}) Delete(ctx context.Context, {{$lname}} *model.{{.Na
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	mutation := {{ $lname }}.Delete(ctx)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := {{$short}}.client.Apply(ctx, mutations)
+	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.Delete()})
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +263,10 @@ func (iter *{{$lname}}Iterator) Into(into *model.{{.Name}}) error {
 		}
 		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
-			if into, ok = v.(*model.{{.Name}}); ok {
+			if cacheValue, ok := v.(*model.{{.Name}}); ok {
+				if err := copyInto(iter.cols, into, cacheValue); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -319,13 +308,12 @@ func (iter *{{$lname}}Iterator) intos(into *[]*model.{{.Name}}) error {
 			if err == iterator.Done {
 				break
 			}
-			return fmt.Errorf("Intos.iter: %w", err)
+			return fmt.Errorf("{{$lname}}Iterator.Next: %w", err)
 		}
 
 		{{$short}} := &model.{{.Name}}{}
-		err = DecodeInto(iter.cols, row, {{$short}})
-		if err != nil {
-			return fmt.Errorf("Intos.iter: %w", err)
+		if err := DecodeInto(iter.cols, row, {{$short}}); err != nil {
+			return fmt.Errorf("{{$lname}}Iterator.DecodeInto: %w", err)
 		}
 
 		*into = append(*into, {{$short}})

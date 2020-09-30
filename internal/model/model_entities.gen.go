@@ -20,7 +20,7 @@ func (g *Group) SetIdentity() (err error) {
 	if g.GroupID == "" {
 		g.GroupID, err = util.NewUUID()
 	}
-	return nil
+	return
 }
 
 // User represents a row from 'users'.
@@ -36,7 +36,7 @@ func (u *User) SetIdentity() (err error) {
 	if u.UserID == "" {
 		u.UserID, err = util.NewUUID()
 	}
-	return nil
+	return
 }
 
 // UserGroup represents a row from 'user_groups'.
@@ -48,5 +48,5 @@ type UserGroup struct {
 }
 
 func (ug *UserGroup) SetIdentity() (err error) {
-	return nil
+	return
 }

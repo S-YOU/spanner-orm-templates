@@ -3,7 +3,6 @@
 package {{ .Package }}
 
 import (
-	"context"
 	"fmt"
 	"time"
 

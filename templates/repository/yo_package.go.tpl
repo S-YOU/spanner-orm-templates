@@ -186,6 +186,23 @@ func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
 	return nil
 }
 
+// copyInto copy values into similar struct that implements Decodable, used where you cannot pass by pointer
+func copyInto(cols []string, dst, src Decodable) error {
+	dstPtrs, err := dst.ColumnsToPtrs(cols)
+	if err != nil {
+		return err
+	}
+	srcPtrs, err := src.ColumnsToPtrs(cols)
+	if err != nil {
+		return err
+	}
+	for i := range srcPtrs {
+		dstPtrs[i] = srcPtrs[i]
+	}
+
+	return nil
+}
+
 func getCacheKey(stmt spanner.Statement) (string, error) {
 	sum64 := xxhash.Sum64String(stmt.SQL)
 	buf := new(bytes.Buffer)

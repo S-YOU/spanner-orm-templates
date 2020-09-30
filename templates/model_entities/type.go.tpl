@@ -24,6 +24,6 @@ func ({{$short}} *{{.Name}}) SetIdentity() (err error) {
 	}
 	{{- end }}
 	{{- end }}
-	return nil
+	return
 }
 {{- end }}

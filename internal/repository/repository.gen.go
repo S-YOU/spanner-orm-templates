@@ -186,6 +186,23 @@ func DecodeInto(cols []string, row *spanner.Row, into Decodable) error {
 	return nil
 }
 
+// copyInto copy values into similar struct that implements Decodable, used where you cannot pass by pointer
+func copyInto(cols []string, dst, src Decodable) error {
+	dstPtrs, err := dst.ColumnsToPtrs(cols)
+	if err != nil {
+		return err
+	}
+	srcPtrs, err := src.ColumnsToPtrs(cols)
+	if err != nil {
+		return err
+	}
+	for i := range srcPtrs {
+		dstPtrs[i] = srcPtrs[i]
+	}
+
+	return nil
+}
+
 func getCacheKey(stmt spanner.Statement) (string, error) {
 	sum64 := xxhash.Sum64String(stmt.SQL)
 	buf := new(bytes.Buffer)
@@ -254,10 +271,7 @@ func (g *groupRepository) Insert(ctx context.Context, group *model.Group) (*time
 		group.UpdatedAt = time.Now()
 	}
 
-	mutations := []*spanner.Mutation{
-		group.Insert(ctx),
-	}
-	t, err := g.client.Apply(ctx, mutations)
+	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.Insert()})
 	if err != nil {
 		return nil, err
 	}
@@ -275,10 +289,7 @@ func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group
 		group.UpdatedAt = time.Now()
 	}
 
-	mutations := []*spanner.Mutation{
-		group.InsertOrUpdate(ctx),
-	}
-	t, err := g.client.Apply(ctx, mutations)
+	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -294,10 +305,7 @@ func (g *groupRepository) Update(ctx context.Context, group *model.Group) (*time
 	}
 	group.UpdatedAt = time.Now()
 
-	mutations := []*spanner.Mutation{
-		group.Update(ctx),
-	}
-	t, err := g.client.Apply(ctx, mutations)
+	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.Update()})
 	if err != nil {
 		return nil, err
 	}
@@ -313,12 +321,11 @@ func (g *groupRepository) UpdateColumns(ctx context.Context, group *model.Group,
 	}
 	group.UpdatedAt = time.Now()
 
-	mutation, err := group.UpdateColumns(ctx, cols...)
+	mutation, err := group.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	mutations := []*spanner.Mutation{mutation}
-	t, err := g.client.Apply(ctx, mutations)
+	t, err := g.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
@@ -334,9 +341,7 @@ func (g *groupRepository) UpdateMap(ctx context.Context, group *model.Group, gro
 	}
 	group.UpdatedAt = time.Now()
 
-	mutation := group.UpdateMap(ctx, groupMap)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := g.client.Apply(ctx, mutations)
+	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.UpdateMap(groupMap)})
 	if err != nil {
 		return nil, err
 	}
@@ -352,9 +357,7 @@ func (g *groupRepository) Delete(ctx context.Context, group *model.Group) (*time
 	}
 	group.UpdatedAt = time.Now()
 
-	mutation := group.Delete(ctx)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := g.client.Apply(ctx, mutations)
+	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.Delete()})
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +440,10 @@ func (iter *groupIterator) Into(into *model.Group) error {
 		}
 		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
-			if into, ok = v.(*model.Group); ok {
+			if cacheValue, ok := v.(*model.Group); ok {
+				if err := copyInto(iter.cols, into, cacheValue); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -479,13 +485,12 @@ func (iter *groupIterator) intos(into *[]*model.Group) error {
 			if err == iterator.Done {
 				break
 			}
-			return fmt.Errorf("Intos.iter: %w", err)
+			return fmt.Errorf("groupIterator.Next: %w", err)
 		}
 
 		g := &model.Group{}
-		err = DecodeInto(iter.cols, row, g)
-		if err != nil {
-			return fmt.Errorf("Intos.iter: %w", err)
+		if err := DecodeInto(iter.cols, row, g); err != nil {
+			return fmt.Errorf("groupIterator.DecodeInto: %w", err)
 		}
 
 		*into = append(*into, g)
@@ -576,10 +581,7 @@ func (u *userRepository) Insert(ctx context.Context, user *model.User) (*time.Ti
 		user.UpdatedAt = time.Now()
 	}
 
-	mutations := []*spanner.Mutation{
-		user.Insert(ctx),
-	}
-	t, err := u.client.Apply(ctx, mutations)
+	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.Insert()})
 	if err != nil {
 		return nil, err
 	}
@@ -597,10 +599,7 @@ func (u *userRepository) InsertOrUpdate(ctx context.Context, user *model.User) (
 		user.UpdatedAt = time.Now()
 	}
 
-	mutations := []*spanner.Mutation{
-		user.InsertOrUpdate(ctx),
-	}
-	t, err := u.client.Apply(ctx, mutations)
+	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -616,10 +615,7 @@ func (u *userRepository) Update(ctx context.Context, user *model.User) (*time.Ti
 	}
 	user.UpdatedAt = time.Now()
 
-	mutations := []*spanner.Mutation{
-		user.Update(ctx),
-	}
-	t, err := u.client.Apply(ctx, mutations)
+	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.Update()})
 	if err != nil {
 		return nil, err
 	}
@@ -635,12 +631,11 @@ func (u *userRepository) UpdateColumns(ctx context.Context, user *model.User, co
 	}
 	user.UpdatedAt = time.Now()
 
-	mutation, err := user.UpdateColumns(ctx, cols...)
+	mutation, err := user.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	mutations := []*spanner.Mutation{mutation}
-	t, err := u.client.Apply(ctx, mutations)
+	t, err := u.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
@@ -656,9 +651,7 @@ func (u *userRepository) UpdateMap(ctx context.Context, user *model.User, userMa
 	}
 	user.UpdatedAt = time.Now()
 
-	mutation := user.UpdateMap(ctx, userMap)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := u.client.Apply(ctx, mutations)
+	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.UpdateMap(userMap)})
 	if err != nil {
 		return nil, err
 	}
@@ -674,9 +667,7 @@ func (u *userRepository) Delete(ctx context.Context, user *model.User) (*time.Ti
 	}
 	user.UpdatedAt = time.Now()
 
-	mutation := user.Delete(ctx)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := u.client.Apply(ctx, mutations)
+	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.Delete()})
 	if err != nil {
 		return nil, err
 	}
@@ -759,7 +750,10 @@ func (iter *userIterator) Into(into *model.User) error {
 		}
 		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
-			if into, ok = v.(*model.User); ok {
+			if cacheValue, ok := v.(*model.User); ok {
+				if err := copyInto(iter.cols, into, cacheValue); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -801,13 +795,12 @@ func (iter *userIterator) intos(into *[]*model.User) error {
 			if err == iterator.Done {
 				break
 			}
-			return fmt.Errorf("Intos.iter: %w", err)
+			return fmt.Errorf("userIterator.Next: %w", err)
 		}
 
 		u := &model.User{}
-		err = DecodeInto(iter.cols, row, u)
-		if err != nil {
-			return fmt.Errorf("Intos.iter: %w", err)
+		if err := DecodeInto(iter.cols, row, u); err != nil {
+			return fmt.Errorf("userIterator.DecodeInto: %w", err)
 		}
 
 		*into = append(*into, u)
@@ -898,10 +891,7 @@ func (ug *userGroupRepository) Insert(ctx context.Context, userGroup *model.User
 		userGroup.UpdatedAt = time.Now()
 	}
 
-	mutations := []*spanner.Mutation{
-		userGroup.Insert(ctx),
-	}
-	t, err := ug.client.Apply(ctx, mutations)
+	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Insert()})
 	if err != nil {
 		return nil, err
 	}
@@ -919,10 +909,7 @@ func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *mo
 		userGroup.UpdatedAt = time.Now()
 	}
 
-	mutations := []*spanner.Mutation{
-		userGroup.InsertOrUpdate(ctx),
-	}
-	t, err := ug.client.Apply(ctx, mutations)
+	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -941,10 +928,7 @@ func (ug *userGroupRepository) Update(ctx context.Context, userGroup *model.User
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	mutations := []*spanner.Mutation{
-		userGroup.Update(ctx),
-	}
-	t, err := ug.client.Apply(ctx, mutations)
+	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Update()})
 	if err != nil {
 		return nil, err
 	}
@@ -963,12 +947,11 @@ func (ug *userGroupRepository) UpdateColumns(ctx context.Context, userGroup *mod
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	mutation, err := userGroup.UpdateColumns(ctx, cols...)
+	mutation, err := userGroup.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	mutations := []*spanner.Mutation{mutation}
-	t, err := ug.client.Apply(ctx, mutations)
+	t, err := ug.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
@@ -987,9 +970,7 @@ func (ug *userGroupRepository) UpdateMap(ctx context.Context, userGroup *model.U
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	mutation := userGroup.UpdateMap(ctx, userGroupMap)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := ug.client.Apply(ctx, mutations)
+	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.UpdateMap(userGroupMap)})
 	if err != nil {
 		return nil, err
 	}
@@ -1008,9 +989,7 @@ func (ug *userGroupRepository) Delete(ctx context.Context, userGroup *model.User
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	mutation := userGroup.Delete(ctx)
-	mutations := []*spanner.Mutation{mutation}
-	t, err := ug.client.Apply(ctx, mutations)
+	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Delete()})
 	if err != nil {
 		return nil, err
 	}
@@ -1093,7 +1072,10 @@ func (iter *userGroupIterator) Into(into *model.UserGroup) error {
 		}
 		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
-			if into, ok = v.(*model.UserGroup); ok {
+			if cacheValue, ok := v.(*model.UserGroup); ok {
+				if err := copyInto(iter.cols, into, cacheValue); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -1135,13 +1117,12 @@ func (iter *userGroupIterator) intos(into *[]*model.UserGroup) error {
 			if err == iterator.Done {
 				break
 			}
-			return fmt.Errorf("Intos.iter: %w", err)
+			return fmt.Errorf("userGroupIterator.Next: %w", err)
 		}
 
 		ug := &model.UserGroup{}
-		err = DecodeInto(iter.cols, row, ug)
-		if err != nil {
-			return fmt.Errorf("Intos.iter: %w", err)
+		if err := DecodeInto(iter.cols, row, ug); err != nil {
+			return fmt.Errorf("userGroupIterator.DecodeInto: %w", err)
 		}
 
 		*into = append(*into, ug)

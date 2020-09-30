@@ -3,7 +3,6 @@
 package model
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 
 // Insert returns a Mutation to insert a row into a table. If the row already
 // exists, the write or transaction fails.
-func (g *Group) Insert(ctx context.Context) *spanner.Mutation {
+func (g *Group) Insert() *spanner.Mutation {
 	g.CreatedAt = time.Now()
 	g.UpdatedAt = time.Now()
 	return spanner.Insert("groups", GroupColumns(), []interface{}{
@@ -22,7 +21,7 @@ func (g *Group) Insert(ctx context.Context) *spanner.Mutation {
 
 // Update returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func (g *Group) Update(ctx context.Context) *spanner.Mutation {
+func (g *Group) Update() *spanner.Mutation {
 	g.UpdatedAt = time.Now()
 	return spanner.Update("groups", GroupColumns(), []interface{}{
 		g.GroupID, g.Name, g.CreatedAt, g.UpdatedAt,
@@ -31,7 +30,7 @@ func (g *Group) Update(ctx context.Context) *spanner.Mutation {
 
 // UpdateMap returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func (g *Group) UpdateMap(ctx context.Context, groupMap map[string]interface{}) *spanner.Mutation {
+func (g *Group) UpdateMap(groupMap map[string]interface{}) *spanner.Mutation {
 	groupMap["updated_at"] = time.Now()
 	// add primary keys to columns to update by primary keys
 	groupMap["group_id"] = g.GroupID
@@ -41,7 +40,7 @@ func (g *Group) UpdateMap(ctx context.Context, groupMap map[string]interface{}) 
 // InsertOrUpdate returns a Mutation to insert a row into a table. If the row
 // already exists, it updates it instead. Any column values not explicitly
 // written are preserved.
-func (g *Group) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
+func (g *Group) InsertOrUpdate() *spanner.Mutation {
 	if g.CreatedAt.IsZero() {
 		g.CreatedAt = time.Now()
 	}
@@ -52,11 +51,11 @@ func (g *Group) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
 }
 
 // UpdateColumns returns a Mutation to update specified columns of a row in a table.
-func (g *Group) UpdateColumns(ctx context.Context, cols ...string) (*spanner.Mutation, error) {
-	g.UpdatedAt = time.Now()
-	cols = append(cols, "updated_at")
+func (g *Group) UpdateColumns(cols ...string) (*spanner.Mutation, error) {
 	// add primary keys to columns to update by primary keys
 	colsWithPKeys := append(cols, GroupPrimaryKeys()...)
+	g.UpdatedAt = time.Now()
+	colsWithPKeys = append(colsWithPKeys, "updated_at")
 
 	values, err := g.columnsToValues(colsWithPKeys)
 	if err != nil {
@@ -67,14 +66,13 @@ func (g *Group) UpdateColumns(ctx context.Context, cols ...string) (*spanner.Mut
 }
 
 // Delete deletes the Group from the database.
-func (g *Group) Delete(ctx context.Context) *spanner.Mutation {
-	values, _ := g.columnsToValues(GroupPrimaryKeys())
-	return spanner.Delete("groups", spanner.Key(values))
+func (g *Group) Delete() *spanner.Mutation {
+	return spanner.Delete("groups", spanner.Key{g.GroupID})
 }
 
 // Insert returns a Mutation to insert a row into a table. If the row already
 // exists, the write or transaction fails.
-func (u *User) Insert(ctx context.Context) *spanner.Mutation {
+func (u *User) Insert() *spanner.Mutation {
 	u.CreatedAt = time.Now()
 	u.UpdatedAt = time.Now()
 	return spanner.Insert("users", UserColumns(), []interface{}{
@@ -84,7 +82,7 @@ func (u *User) Insert(ctx context.Context) *spanner.Mutation {
 
 // Update returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func (u *User) Update(ctx context.Context) *spanner.Mutation {
+func (u *User) Update() *spanner.Mutation {
 	u.UpdatedAt = time.Now()
 	return spanner.Update("users", UserColumns(), []interface{}{
 		u.UserID, u.Name, u.Status, u.CreatedAt, u.UpdatedAt,
@@ -93,7 +91,7 @@ func (u *User) Update(ctx context.Context) *spanner.Mutation {
 
 // UpdateMap returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func (u *User) UpdateMap(ctx context.Context, userMap map[string]interface{}) *spanner.Mutation {
+func (u *User) UpdateMap(userMap map[string]interface{}) *spanner.Mutation {
 	userMap["updated_at"] = time.Now()
 	// add primary keys to columns to update by primary keys
 	userMap["user_id"] = u.UserID
@@ -103,7 +101,7 @@ func (u *User) UpdateMap(ctx context.Context, userMap map[string]interface{}) *s
 // InsertOrUpdate returns a Mutation to insert a row into a table. If the row
 // already exists, it updates it instead. Any column values not explicitly
 // written are preserved.
-func (u *User) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
+func (u *User) InsertOrUpdate() *spanner.Mutation {
 	if u.CreatedAt.IsZero() {
 		u.CreatedAt = time.Now()
 	}
@@ -114,11 +112,11 @@ func (u *User) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
 }
 
 // UpdateColumns returns a Mutation to update specified columns of a row in a table.
-func (u *User) UpdateColumns(ctx context.Context, cols ...string) (*spanner.Mutation, error) {
-	u.UpdatedAt = time.Now()
-	cols = append(cols, "updated_at")
+func (u *User) UpdateColumns(cols ...string) (*spanner.Mutation, error) {
 	// add primary keys to columns to update by primary keys
 	colsWithPKeys := append(cols, UserPrimaryKeys()...)
+	u.UpdatedAt = time.Now()
+	colsWithPKeys = append(colsWithPKeys, "updated_at")
 
 	values, err := u.columnsToValues(colsWithPKeys)
 	if err != nil {
@@ -129,14 +127,13 @@ func (u *User) UpdateColumns(ctx context.Context, cols ...string) (*spanner.Muta
 }
 
 // Delete deletes the User from the database.
-func (u *User) Delete(ctx context.Context) *spanner.Mutation {
-	values, _ := u.columnsToValues(UserPrimaryKeys())
-	return spanner.Delete("users", spanner.Key(values))
+func (u *User) Delete() *spanner.Mutation {
+	return spanner.Delete("users", spanner.Key{u.UserID})
 }
 
 // Insert returns a Mutation to insert a row into a table. If the row already
 // exists, the write or transaction fails.
-func (ug *UserGroup) Insert(ctx context.Context) *spanner.Mutation {
+func (ug *UserGroup) Insert() *spanner.Mutation {
 	ug.CreatedAt = time.Now()
 	ug.UpdatedAt = time.Now()
 	return spanner.Insert("user_groups", UserGroupColumns(), []interface{}{
@@ -146,7 +143,7 @@ func (ug *UserGroup) Insert(ctx context.Context) *spanner.Mutation {
 
 // Update returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func (ug *UserGroup) Update(ctx context.Context) *spanner.Mutation {
+func (ug *UserGroup) Update() *spanner.Mutation {
 	ug.UpdatedAt = time.Now()
 	return spanner.Update("user_groups", UserGroupColumns(), []interface{}{
 		ug.GroupID, ug.UserID, ug.CreatedAt, ug.UpdatedAt,
@@ -155,7 +152,7 @@ func (ug *UserGroup) Update(ctx context.Context) *spanner.Mutation {
 
 // UpdateMap returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func (ug *UserGroup) UpdateMap(ctx context.Context, usergroupMap map[string]interface{}) *spanner.Mutation {
+func (ug *UserGroup) UpdateMap(usergroupMap map[string]interface{}) *spanner.Mutation {
 	usergroupMap["updated_at"] = time.Now()
 	// add primary keys to columns to update by primary keys
 	usergroupMap["group_id"] = ug.GroupID
@@ -166,7 +163,7 @@ func (ug *UserGroup) UpdateMap(ctx context.Context, usergroupMap map[string]inte
 // InsertOrUpdate returns a Mutation to insert a row into a table. If the row
 // already exists, it updates it instead. Any column values not explicitly
 // written are preserved.
-func (ug *UserGroup) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
+func (ug *UserGroup) InsertOrUpdate() *spanner.Mutation {
 	if ug.CreatedAt.IsZero() {
 		ug.CreatedAt = time.Now()
 	}
@@ -177,11 +174,11 @@ func (ug *UserGroup) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
 }
 
 // UpdateColumns returns a Mutation to update specified columns of a row in a table.
-func (ug *UserGroup) UpdateColumns(ctx context.Context, cols ...string) (*spanner.Mutation, error) {
-	ug.UpdatedAt = time.Now()
-	cols = append(cols, "updated_at")
+func (ug *UserGroup) UpdateColumns(cols ...string) (*spanner.Mutation, error) {
 	// add primary keys to columns to update by primary keys
 	colsWithPKeys := append(cols, UserGroupPrimaryKeys()...)
+	ug.UpdatedAt = time.Now()
+	colsWithPKeys = append(colsWithPKeys, "updated_at")
 
 	values, err := ug.columnsToValues(colsWithPKeys)
 	if err != nil {
@@ -192,7 +189,6 @@ func (ug *UserGroup) UpdateColumns(ctx context.Context, cols ...string) (*spanne
 }
 
 // Delete deletes the UserGroup from the database.
-func (ug *UserGroup) Delete(ctx context.Context) *spanner.Mutation {
-	values, _ := ug.columnsToValues(UserGroupPrimaryKeys())
-	return spanner.Delete("user_groups", spanner.Key(values))
+func (ug *UserGroup) Delete() *spanner.Mutation {
+	return spanner.Delete("user_groups", spanner.Key{ug.GroupID, ug.UserID})
 }

@@ -9,7 +9,7 @@
 {{- $table := (.Table.TableName) }}
 // Insert returns a Mutation to insert a row into a table. If the row already
 // exists, the write or transaction fails.
-func ({{ $short }} *{{ .Name }}) Insert(ctx context.Context) *spanner.Mutation {
+func ({{ $short }} *{{ .Name }}) Insert() *spanner.Mutation {
 {{- if $hasCreatedAt }}
 	{{ $short }}.CreatedAt = time.Now()
 {{- end }}
@@ -25,7 +25,7 @@ func ({{ $short }} *{{ .Name }}) Insert(ctx context.Context) *spanner.Mutation {
 
 // Update returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func ({{ $short }} *{{ .Name }}) Update(ctx context.Context) *spanner.Mutation {
+func ({{ $short }} *{{ .Name }}) Update() *spanner.Mutation {
 {{- if $hasUpdatedAt }}
 	{{ $short }}.UpdatedAt = time.Now()
 {{- end }}
@@ -36,7 +36,7 @@ func ({{ $short }} *{{ .Name }}) Update(ctx context.Context) *spanner.Mutation {
 
 // UpdateMap returns a Mutation to update a row in a table. If the row does not
 // already exist, the write or transaction fails.
-func ({{ $short }} *{{ .Name }}) UpdateMap(ctx context.Context, {{ $lname }}Map map[string]interface{}) *spanner.Mutation {
+func ({{ $short }} *{{ .Name }}) UpdateMap({{ $lname }}Map map[string]interface{}) *spanner.Mutation {
 {{- if $hasUpdatedAt }}
 	{{ $lname }}Map["updated_at"] = time.Now()
 {{- end }}
@@ -50,7 +50,7 @@ func ({{ $short }} *{{ .Name }}) UpdateMap(ctx context.Context, {{ $lname }}Map 
 // InsertOrUpdate returns a Mutation to insert a row into a table. If the row
 // already exists, it updates it instead. Any column values not explicitly
 // written are preserved.
-func ({{ $short }} *{{ .Name }}) InsertOrUpdate(ctx context.Context) *spanner.Mutation {
+func ({{ $short }} *{{ .Name }}) InsertOrUpdate() *spanner.Mutation {
 {{- if $hasCreatedAt }}
 	if {{ $short }}.CreatedAt.IsZero() {
 		{{ $short }}.CreatedAt = time.Now()
@@ -65,13 +65,13 @@ func ({{ $short }} *{{ .Name }}) InsertOrUpdate(ctx context.Context) *spanner.Mu
 }
 
 // UpdateColumns returns a Mutation to update specified columns of a row in a table.
-func ({{ $short }} *{{ .Name }}) UpdateColumns(ctx context.Context, cols ...string) (*spanner.Mutation, error) {
-{{- if $hasUpdatedAt }}
-	{{ $short }}.UpdatedAt = time.Now()
-	cols = append(cols, "updated_at")
-{{- end }}
+func ({{ $short }} *{{ .Name }}) UpdateColumns(cols ...string) (*spanner.Mutation, error) {
 	// add primary keys to columns to update by primary keys
 	colsWithPKeys := append(cols, {{ .Name }}PrimaryKeys()...)
+{{- if $hasUpdatedAt }}
+	{{ $short }}.UpdatedAt = time.Now()
+	colsWithPKeys = append(colsWithPKeys, "updated_at")
+{{- end }}
 
 	values, err := {{ $short }}.columnsToValues(colsWithPKeys)
 	if err != nil {
@@ -83,7 +83,6 @@ func ({{ $short }} *{{ .Name }}) UpdateColumns(ctx context.Context, cols ...stri
 {{- end }}
 
 // Delete deletes the {{ .Name }} from the database.
-func ({{ $short }} *{{ .Name }}) Delete(ctx context.Context) *spanner.Mutation {
-	values, _ := {{ $short }}.columnsToValues({{ .Name }}PrimaryKeys())
-	return spanner.Delete("{{ $table }}", spanner.Key(values))
+func ({{ $short }} *{{ .Name }}) Delete() *spanner.Mutation {
+	return spanner.Delete("{{ $table }}", spanner.Key{ {{- fieldnames .PrimaryKeyFields $short }}})
 }
