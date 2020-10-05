@@ -26,10 +26,11 @@ type Repository struct {
 }
 
 type (
-	Params   = map[string]interface{}
-	Key      = spanner.Key
-	KeyRange = spanner.KeyRange
-	Row      = *spanner.Row
+	Params      = map[string]interface{}
+	Key         = spanner.Key
+	KeyRange    = spanner.KeyRange
+	Row         = *spanner.Row
+	Transaction = *spanner.ReadWriteTransaction
 )
 
 type Decodable interface {
@@ -45,6 +46,13 @@ type queryCache struct {
 var (
 	ErrNotFound = errors.New("NotFound")
 )
+
+func (r Repository) Transaction(ctx context.Context, fn func(tx Transaction) error) error {
+	_, err := r.client.ReadWriteTransaction(ctx, func(ctx context.Context, tx Transaction) error {
+		return fn(tx)
+	})
+	return err
+}
 
 func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {
 	defer iter.Stop()
