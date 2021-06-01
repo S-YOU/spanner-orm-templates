@@ -9,13 +9,9 @@ import (
 	"github.com/s-you/yo-templates/internal/config"
 )
 
-const (
-	SessionsPerChannels = 100
-)
-
 func Connect(ctx context.Context, db config.DB) (*spanner.Client, error) {
 	spc := spanner.DefaultSessionPoolConfig
-	spc.MaxOpened = uint64(db.Channels * SessionsPerChannels)
+	spc.MaxOpened = uint64(db.Channels * db.SessionsPerChannel)
 	cc := spanner.ClientConfig{SessionPoolConfig: spc}
 	grpcOpts := option.WithGRPCConnectionPool(db.Channels)
 	client, err := spanner.NewClientWithConfig(ctx, db.Format(), cc, grpcOpts)
