@@ -20,6 +20,7 @@ type {{ $database }}CRUD interface {
 	CreateOrUpdate{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt"}}) (*model.{{.Name}}, error)
 	{{- end }}
 	Insert{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) (*model.{{.Name}}, error)
+	InsertOrUpdate{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) (*model.{{.Name}}, error)
 	Update{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) error
 	Delete{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) error
 }
@@ -59,7 +60,15 @@ func ({{$short}} {{$name}}) Insert{{.Name}}(ctx context.Context, {{$lname}} *mod
 	return {{$lname}}, nil
 }
 
-{{- if le (columncount .Fields "CreatedAt" "UpdatedAt" .PrimaryKeyFields) 5 }}
+func ({{$short}} {{$name}}) InsertOrUpdate{{.Name}}(ctx context.Context, {{$lname}} *model.{{.Name}}) (*model.{{.Name}}, error) {
+	if _, err := {{$short}}.InsertOrUpdate(ctx, {{$lname}}); err != nil {
+		return nil, err
+	}
+
+	return {{$lname}}, nil
+}
+
+		{{- if le (columncount .Fields "CreatedAt" "UpdatedAt" .PrimaryKeyFields) 5 }}
 {{- if eq (len .PrimaryKeyFields) 1}}
 
 func ({{$short}} {{$name}}) Create{{.Name}}(ctx context.Context{{gocustomparamlist .Fields true true "CreatedAt" "UpdatedAt" .PrimaryKeyFields}}) (*model.{{.Name}}, error) {

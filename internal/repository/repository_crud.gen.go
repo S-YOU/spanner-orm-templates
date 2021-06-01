@@ -13,6 +13,7 @@ type GroupRepositoryCRUD interface {
 	CreateGroup(ctx context.Context, name string) (*model.Group, error)
 	CreateOrUpdateGroup(ctx context.Context, groupID string, name string) (*model.Group, error)
 	InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error)
+	InsertOrUpdateGroup(ctx context.Context, group *model.Group) (*model.Group, error)
 	UpdateGroup(ctx context.Context, group *model.Group) error
 	DeleteGroup(ctx context.Context, group *model.Group) error
 }
@@ -41,6 +42,14 @@ func (g groupRepository) FindAllWithCursor(ctx context.Context, limit int, curso
 
 func (g groupRepository) InsertGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
 	if _, err := g.Insert(ctx, group); err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
+func (g groupRepository) InsertOrUpdateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
+	if _, err := g.InsertOrUpdate(ctx, group); err != nil {
 		return nil, err
 	}
 
@@ -87,6 +96,7 @@ type UserRepositoryCRUD interface {
 	CreateUser(ctx context.Context, name string, status int64) (*model.User, error)
 	CreateOrUpdateUser(ctx context.Context, userID string, name string, status int64) (*model.User, error)
 	InsertUser(ctx context.Context, user *model.User) (*model.User, error)
+	InsertOrUpdateUser(ctx context.Context, user *model.User) (*model.User, error)
 	UpdateUser(ctx context.Context, user *model.User) error
 	DeleteUser(ctx context.Context, user *model.User) error
 }
@@ -115,6 +125,14 @@ func (u userRepository) FindAllWithCursor(ctx context.Context, limit int, cursor
 
 func (u userRepository) InsertUser(ctx context.Context, user *model.User) (*model.User, error) {
 	if _, err := u.Insert(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (u userRepository) InsertOrUpdateUser(ctx context.Context, user *model.User) (*model.User, error) {
+	if _, err := u.InsertOrUpdate(ctx, user); err != nil {
 		return nil, err
 	}
 
@@ -160,6 +178,7 @@ type UserGroupRepositoryCRUD interface {
 	CreateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
 	CreateOrUpdateUserGroup(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
 	InsertUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error)
+	InsertOrUpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error)
 	UpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) error
 	DeleteUserGroup(ctx context.Context, userGroup *model.UserGroup) error
 }
@@ -175,6 +194,14 @@ func (ug userGroupRepository) FindAll(ctx context.Context) ([]*model.UserGroup, 
 
 func (ug userGroupRepository) InsertUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error) {
 	if _, err := ug.Insert(ctx, userGroup); err != nil {
+		return nil, err
+	}
+
+	return userGroup, nil
+}
+
+func (ug userGroupRepository) InsertOrUpdateUserGroup(ctx context.Context, userGroup *model.UserGroup) (*model.UserGroup, error) {
+	if _, err := ug.InsertOrUpdate(ctx, userGroup); err != nil {
 		return nil, err
 	}
 
