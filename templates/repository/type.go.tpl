@@ -101,9 +101,9 @@ func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *mod
 
 func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
 	{{- range .PrimaryKeyFields }}
-	if {{$lname}}.{{ .Name }} == "" {
+	if {{$lname}}.{{ .Name }} == {{ if eq .Type "string" }}""{{else}}0{{end}} {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
-	}{{ end}}
+	}{{ end }}
 {{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
 		return nil, fmt.Errorf("created_at is blank")
@@ -122,7 +122,7 @@ func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Na
 
 func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *model.{{.Name}}, cols ...string) (*time.Time, error) {
 	{{- range .PrimaryKeyFields }}
-	if {{$lname}}.{{ .Name }} == "" {
+	if {{$lname}}.{{ .Name }} == {{ if eq .Type "string" }}""{{else}}0{{end}} {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
 {{- if $hasCreatedAt }}
@@ -147,7 +147,7 @@ func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *mode
 
 func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{.Name}}, {{$lname}}Map map[string]interface{}) (*time.Time, error) {
 	{{- range .PrimaryKeyFields }}
-	if {{$lname}}.{{ .Name }} == "" {
+	if {{$lname}}.{{ .Name }} == {{ if eq .Type "string" }}""{{else}}0{{end}} {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
 {{- if $hasCreatedAt }}
@@ -168,7 +168,7 @@ func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{
 
 func ({{$short}} *{{$name}}) Delete(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
 	{{- range .PrimaryKeyFields }}
-	if {{$lname}}.{{ .Name }} == "" {
+	if {{$lname}}.{{ .Name }} == {{ if eq .Type "string" }}""{{else}}0{{end}} {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
 {{- if $hasCreatedAt }}
