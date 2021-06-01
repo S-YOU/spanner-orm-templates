@@ -1,5 +1,7 @@
 DB_SPANNER_SCHEMA := db/spanner.sql
 OUT_DIR := internal
+MODEL_PATH := github.com/s-you/yo-templates/internal/model
+SED_EXEC := $(shell which sed)
 
 ## ENV
 ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -12,6 +14,11 @@ build-tools:
 	@[ -d .git ] && git checkout go.* || true
 
 gen: yo-gen
+
+update-model-path:
+	@for f in `find $(OUT_DIR) -name '*.gen.go'`; \
+		do $(SED_EXEC) -i -e "s|github.com/s-you/yo-templates/internal/model|$(MODEL_PATH)|" $$f; \
+	done;
 
 yo-gen:
 	$(eval export PATH=$(shell pwd)/bin:$(PATH))
