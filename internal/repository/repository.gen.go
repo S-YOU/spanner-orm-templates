@@ -15,7 +15,6 @@ import (
 	"github.com/cespare/xxhash"
 	"google.golang.org/api/iterator"
 
-	"github.com/s-you/apierrors"
 	"github.com/s-you/spannerbuilder"
 	"github.com/s-you/yo-templates/internal/model"
 	"github.com/s-you/yo-templates/internal/pkg/cache"
@@ -510,7 +509,7 @@ func (iter *groupIterator) intos(into *[]*model.Group) error {
 func (iter *groupIterator) IntoDecodable(into Decodable) error {
 	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("Group not found: %w", err)
+			return fmt.Errorf("Group not found: %w", err)
 		}
 		return err
 	}
@@ -524,7 +523,7 @@ func (iter *groupIterator) IntosDecodable(into interface{}) error {
 func (iter *groupIterator) IntoAny(into interface{}) error {
 	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("Group not found: %w", err)
+			return fmt.Errorf("Group not found: %w", err)
 		}
 		return err
 	}
@@ -820,7 +819,7 @@ func (iter *userIterator) intos(into *[]*model.User) error {
 func (iter *userIterator) IntoDecodable(into Decodable) error {
 	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("User not found: %w", err)
+			return fmt.Errorf("User not found: %w", err)
 		}
 		return err
 	}
@@ -834,7 +833,7 @@ func (iter *userIterator) IntosDecodable(into interface{}) error {
 func (iter *userIterator) IntoAny(into interface{}) error {
 	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("User not found: %w", err)
+			return fmt.Errorf("User not found: %w", err)
 		}
 		return err
 	}
@@ -1142,7 +1141,7 @@ func (iter *userGroupIterator) intos(into *[]*model.UserGroup) error {
 func (iter *userGroupIterator) IntoDecodable(into Decodable) error {
 	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("UserGroup not found: %w", err)
+			return fmt.Errorf("UserGroup not found: %w", err)
 		}
 		return err
 	}
@@ -1156,7 +1155,7 @@ func (iter *userGroupIterator) IntosDecodable(into interface{}) error {
 func (iter *userGroupIterator) IntoAny(into interface{}) error {
 	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("UserGroup not found: %w", err)
+			return fmt.Errorf("UserGroup not found: %w", err)
 		}
 		return err
 	}

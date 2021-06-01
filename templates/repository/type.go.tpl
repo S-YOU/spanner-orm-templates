@@ -325,7 +325,7 @@ func (iter *{{$lname}}Iterator) intos(into *[]*model.{{.Name}}) error {
 func (iter *{{$lname}}Iterator) IntoDecodable(into Decodable) error {
 	if err := intoDecodable(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("{{.Name}} not found: %w", err)
+			return fmt.Errorf("{{.Name}} not found: %w", err)
 		}
 		return err
 	}
@@ -339,7 +339,7 @@ func (iter *{{$lname}}Iterator) IntosDecodable(into interface{}) error {
 func (iter *{{$lname}}Iterator) IntoAny(into interface{}) error {
 	if err := intoAny(iter.RowIterator, iter.cols, into); err != nil {
 		if err == ErrNotFound {
-			return apierrors.ErrNotFound.Swrapf("{{.Name}} not found: %w", err)
+			return fmt.Errorf("{{.Name}} not found: %w", err)
 		}
 		return err
 	}

@@ -15,7 +15,6 @@ import (
 	"github.com/cespare/xxhash"
 	"google.golang.org/api/iterator"
 
-	"github.com/s-you/apierrors"
 	"github.com/s-you/spannerbuilder"
 	"github.com/s-you/yo-templates/internal/model"
 	"github.com/s-you/yo-templates/internal/pkg/cache"
