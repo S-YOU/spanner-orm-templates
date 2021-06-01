@@ -12,6 +12,11 @@ type {{ $database }}Indexes interface {
 		(ctx context.Context{{ goparamlist .PrimaryKeyFields true true }}) (*model.{{ .Name }}, error)
 	Find{{pluralize .Name}}By{{- range $i, $f := .PrimaryKeyFields }}{{ if $i }}And{{ end }}{{ pluralize .Name }}{{ end -}}
 		(ctx context.Context{{- range .PrimaryKeyFields }}, {{goparamname (pluralize .Name)}} []{{.Type}}{{end}}) ([]*model.{{ .Name }}, error)
+	{{- if gt (len $primaryKeys) 1 }}
+		{{- range $i, $f := $primaryKeys }}
+	Find{{pluralize $typeName}}By{{ pluralize .Name }}(ctx context.Context, {{goparamname (pluralize .Name)}} []{{.Type}}) ([]*model.{{ $typeName }}, error)
+		{{- end }}
+	{{- end }}
 	{{- range .Indexes -}}
 		{{- if not .Index.IsUnique }}
 	Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}(ctx context.Context{{ goparamlist .Fields true true }}) ([]*model.{{ .Type.Name }}, error)
@@ -53,4 +58,20 @@ func ({{$short}} {{$name}}) Find{{pluralize .Name}}By{{- range $i, $f := .Primar
 
 	return items, nil
 }
+
+{{- if gt (len $primaryKeys) 1 }}
+{{- range $i, $f := $primaryKeys }}
+
+// Find{{pluralize $typeName}}By{{ pluralize .Name }} retrieves multiple rows from '{{ $table }}' as []*model.{{ $typeName }}.
+// Generated from part of primary key
+func ({{$short}} {{$name}}) Find{{pluralize $typeName}}By{{ pluralize .Name }}(ctx context.Context, {{goparamname (pluralize .Name)}} []{{.Type}}) ([]*model.{{ $typeName }}, error) {
+	var items []*model.{{ $typeName }}
+	if err := {{$short}}.Builder().Where("{{colname $f.Col}} IN UNNEST(@arg0)", Params{"arg0": {{goparamname (pluralize .Name)}}}).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+{{- end }}
+{{- end }}
 {{- /* */ -}}

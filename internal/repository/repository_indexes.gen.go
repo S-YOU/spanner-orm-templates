@@ -70,6 +70,8 @@ func (u userRepository) FindUsersByUserIDs(ctx context.Context, userIDs []string
 type UserGroupRepositoryIndexes interface {
 	GetUserGroupByGroupIDAndUserID(ctx context.Context, groupID string, userID string) (*model.UserGroup, error)
 	FindUserGroupsByGroupIDsAndUserIDs(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error)
+	FindUserGroupsByGroupIDs(ctx context.Context, groupIDs []string) ([]*model.UserGroup, error)
+	FindUserGroupsByUserIDs(ctx context.Context, userIDs []string) ([]*model.UserGroup, error)
 	GetUserGroupByGroupID(ctx context.Context, groupID string) (*model.UserGroup, error)
 	GetUserGroupByGroupIDFast(ctx context.Context, groupID string) (*model.UserGroup, error)
 	FindUserGroupsByGroupIDs(ctx context.Context, groupIDs []string) ([]*model.UserGroup, error)
@@ -94,6 +96,28 @@ func (ug userGroupRepository) GetUserGroupByGroupIDAndUserID(ctx context.Context
 func (ug userGroupRepository) FindUserGroupsByGroupIDsAndUserIDs(ctx context.Context, groupIDs []string, userIDs []string) ([]*model.UserGroup, error) {
 	var items []*model.UserGroup
 	if err := ug.Builder().Where("group_id IN UNNEST(@arg0) AND user_id IN UNNEST(@arg1)", Params{"arg0": groupIDs, "arg1": userIDs}).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// FindUserGroupsByGroupIDs retrieves multiple rows from 'user_groups' as []*model.UserGroup.
+// Generated from part of primary key
+func (ug userGroupRepository) FindUserGroupsByGroupIDs(ctx context.Context, groupIDs []string) ([]*model.UserGroup, error) {
+	var items []*model.UserGroup
+	if err := ug.Builder().Where("group_id IN UNNEST(@arg0)", Params{"arg0": groupIDs}).Query(ctx).Intos(&items); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+// FindUserGroupsByUserIDs retrieves multiple rows from 'user_groups' as []*model.UserGroup.
+// Generated from part of primary key
+func (ug userGroupRepository) FindUserGroupsByUserIDs(ctx context.Context, userIDs []string) ([]*model.UserGroup, error) {
+	var items []*model.UserGroup
+	if err := ug.Builder().Where("user_id IN UNNEST(@arg0)", Params{"arg0": userIDs}).Query(ctx).Intos(&items); err != nil {
 		return nil, err
 	}
 
