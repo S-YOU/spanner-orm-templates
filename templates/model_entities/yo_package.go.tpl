@@ -4,6 +4,4 @@ package {{ .Package }}
 
 import (
 	"time"
-
-	"github.com/s-you/yo-templates/internal/util"
 )

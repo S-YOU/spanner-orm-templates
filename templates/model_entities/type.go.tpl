@@ -13,17 +13,3 @@ type {{ .Name }} struct {
 {{- end }}
 {{- end }}
 }
-
-{{- if .PrimaryKey }}
-
-func ({{$short}} *{{.Name}}) SetIdentity() (err error) {
-	{{- if eq (len .PrimaryKeyFields) 1 }}
-	{{- range .PrimaryKeyFields }}
-	if {{$short}}.{{.Name}} == "" {
-		{{$short}}.{{.Name}}, err = util.NewUUID()
-	}
-	{{- end }}
-	{{- end }}
-	return
-}
-{{- end }}
