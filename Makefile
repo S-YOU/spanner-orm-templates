@@ -1,4 +1,5 @@
 DB_SPANNER_SCHEMA := db/spanner.sql
+OUT_DIR := internal
 
 ## ENV
 ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -14,31 +15,31 @@ gen: yo-gen
 
 yo-gen:
 	$(eval export PATH=$(shell pwd)/bin:$(PATH))
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/model \
 		--from-ddl \
 		--template-path ./templates/model \
 		--inflection-rule-file templates/inflection_rule.yml \
 		--suffix .gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/model \
 		--from-ddl \
 		--template-path ./templates/model_entities \
 		--inflection-rule-file templates/inflection_rule.yml \
 		--suffix _entities.gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/model \
 		--from-ddl \
 		--template-path ./templates/model_identity \
 		--inflection-rule-file templates/inflection_rule.yml \
 		--suffix _identity.gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/model \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/model \
 		--from-ddl \
 		--template-path ./templates/model_crud \
 		--inflection-rule-file templates/inflection_rule.yml \
 		--suffix _crud.gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/repository \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/repository \
 		--from-ddl \
 		--template-path ./templates/repository \
 		--inflection-rule-file templates/inflection_rule.yml \
@@ -46,7 +47,7 @@ yo-gen:
 		--custom-type-package model \
 		--suffix .gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/repository \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/repository \
 		--from-ddl \
 		--template-path ./templates/repository_indexes \
 		--inflection-rule-file templates/inflection_rule.yml \
@@ -54,7 +55,7 @@ yo-gen:
 		--custom-type-package model \
 		--suffix _indexes.gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/repository \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/repository \
 		--from-ddl \
 		--template-path ./templates/repository_crud \
 		--inflection-rule-file templates/inflection_rule.yml \
@@ -62,7 +63,7 @@ yo-gen:
 		--custom-type-package model \
 		--suffix _crud.gen.go \
 		--single-file
-	bin/yo generate $(DB_SPANNER_SCHEMA) -o internal/repository \
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/repository \
 		--from-ddl \
 		--template-path ./templates/repository_all \
 		--inflection-rule-file templates/inflection_rule.yml \

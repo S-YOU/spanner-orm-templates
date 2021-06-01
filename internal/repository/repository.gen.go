@@ -279,11 +279,11 @@ func (g *groupRepository) Insert(ctx context.Context, group *model.Group) (*time
 		group.UpdatedAt = time.Now()
 	}
 
-	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.Insert()})
+	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.Insert()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group) (time.Time, error) {
@@ -297,11 +297,11 @@ func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group
 		group.UpdatedAt = time.Now()
 	}
 
-	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.InsertOrUpdate()})
+	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
-	return t, nil
+	return modified, nil
 }
 
 func (g *groupRepository) Update(ctx context.Context, group *model.Group) (*time.Time, error) {
@@ -313,11 +313,11 @@ func (g *groupRepository) Update(ctx context.Context, group *model.Group) (*time
 	}
 	group.UpdatedAt = time.Now()
 
-	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.Update()})
+	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.Update()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (g *groupRepository) UpdateColumns(ctx context.Context, group *model.Group, cols ...string) (*time.Time, error) {
@@ -333,11 +333,11 @@ func (g *groupRepository) UpdateColumns(ctx context.Context, group *model.Group,
 	if err != nil {
 		return nil, err
 	}
-	t, err := g.client.Apply(ctx, []*spanner.Mutation{mutation})
+	modified, err := g.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (g *groupRepository) UpdateMap(ctx context.Context, group *model.Group, groupMap map[string]interface{}) (*time.Time, error) {
@@ -349,11 +349,11 @@ func (g *groupRepository) UpdateMap(ctx context.Context, group *model.Group, gro
 	}
 	group.UpdatedAt = time.Now()
 
-	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.UpdateMap(groupMap)})
+	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.UpdateMap(groupMap)})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (g *groupRepository) Delete(ctx context.Context, group *model.Group) (*time.Time, error) {
@@ -365,11 +365,11 @@ func (g *groupRepository) Delete(ctx context.Context, group *model.Group) (*time
 	}
 	group.UpdatedAt = time.Now()
 
-	t, err := g.client.Apply(ctx, []*spanner.Mutation{group.Delete()})
+	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.Delete()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (g *groupRepository) Builder() *groupBuilder {
@@ -587,11 +587,11 @@ func (u *userRepository) Insert(ctx context.Context, user *model.User) (*time.Ti
 		user.UpdatedAt = time.Now()
 	}
 
-	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.Insert()})
+	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.Insert()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (u *userRepository) InsertOrUpdate(ctx context.Context, user *model.User) (time.Time, error) {
@@ -605,11 +605,11 @@ func (u *userRepository) InsertOrUpdate(ctx context.Context, user *model.User) (
 		user.UpdatedAt = time.Now()
 	}
 
-	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.InsertOrUpdate()})
+	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
-	return t, nil
+	return modified, nil
 }
 
 func (u *userRepository) Update(ctx context.Context, user *model.User) (*time.Time, error) {
@@ -621,11 +621,11 @@ func (u *userRepository) Update(ctx context.Context, user *model.User) (*time.Ti
 	}
 	user.UpdatedAt = time.Now()
 
-	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.Update()})
+	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.Update()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (u *userRepository) UpdateColumns(ctx context.Context, user *model.User, cols ...string) (*time.Time, error) {
@@ -641,11 +641,11 @@ func (u *userRepository) UpdateColumns(ctx context.Context, user *model.User, co
 	if err != nil {
 		return nil, err
 	}
-	t, err := u.client.Apply(ctx, []*spanner.Mutation{mutation})
+	modified, err := u.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (u *userRepository) UpdateMap(ctx context.Context, user *model.User, userMap map[string]interface{}) (*time.Time, error) {
@@ -657,11 +657,11 @@ func (u *userRepository) UpdateMap(ctx context.Context, user *model.User, userMa
 	}
 	user.UpdatedAt = time.Now()
 
-	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.UpdateMap(userMap)})
+	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.UpdateMap(userMap)})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (u *userRepository) Delete(ctx context.Context, user *model.User) (*time.Time, error) {
@@ -673,11 +673,11 @@ func (u *userRepository) Delete(ctx context.Context, user *model.User) (*time.Ti
 	}
 	user.UpdatedAt = time.Now()
 
-	t, err := u.client.Apply(ctx, []*spanner.Mutation{user.Delete()})
+	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.Delete()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (u *userRepository) Builder() *userBuilder {
@@ -895,11 +895,11 @@ func (ug *userGroupRepository) Insert(ctx context.Context, userGroup *model.User
 		userGroup.UpdatedAt = time.Now()
 	}
 
-	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Insert()})
+	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Insert()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *model.UserGroup) (time.Time, error) {
@@ -913,11 +913,11 @@ func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *mo
 		userGroup.UpdatedAt = time.Now()
 	}
 
-	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.InsertOrUpdate()})
+	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
-	return t, nil
+	return modified, nil
 }
 
 func (ug *userGroupRepository) Update(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
@@ -932,11 +932,11 @@ func (ug *userGroupRepository) Update(ctx context.Context, userGroup *model.User
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Update()})
+	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Update()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (ug *userGroupRepository) UpdateColumns(ctx context.Context, userGroup *model.UserGroup, cols ...string) (*time.Time, error) {
@@ -955,11 +955,11 @@ func (ug *userGroupRepository) UpdateColumns(ctx context.Context, userGroup *mod
 	if err != nil {
 		return nil, err
 	}
-	t, err := ug.client.Apply(ctx, []*spanner.Mutation{mutation})
+	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (ug *userGroupRepository) UpdateMap(ctx context.Context, userGroup *model.UserGroup, userGroupMap map[string]interface{}) (*time.Time, error) {
@@ -974,11 +974,11 @@ func (ug *userGroupRepository) UpdateMap(ctx context.Context, userGroup *model.U
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.UpdateMap(userGroupMap)})
+	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.UpdateMap(userGroupMap)})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (ug *userGroupRepository) Delete(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
@@ -993,11 +993,11 @@ func (ug *userGroupRepository) Delete(ctx context.Context, userGroup *model.User
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	t, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Delete()})
+	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Delete()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func (ug *userGroupRepository) Builder() *userGroupBuilder {

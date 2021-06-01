@@ -70,11 +70,11 @@ func ({{$short}} *{{$name}}) Insert(ctx context.Context, {{$lname}} *model.{{.Na
 	}
 {{- end }}
 
-	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Insert()})
+	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Insert()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *model.{{.Name}}) (time.Time, error) {
@@ -92,11 +92,11 @@ func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *mod
 	}
 {{- end }}
 
-	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.InsertOrUpdate()})
+	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.InsertOrUpdate()})
 	if err != nil {
 		return time.Time{}, err
 	}
-	return t, nil
+	return modified, nil
 }
 
 func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
@@ -113,11 +113,11 @@ func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Na
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Update()})
+	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Update()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *model.{{.Name}}, cols ...string) (*time.Time, error) {
@@ -138,11 +138,11 @@ func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *mode
 	if err != nil {
 		return nil, err
 	}
-	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{mutation})
+	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{mutation})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{.Name}}, {{$lname}}Map map[string]interface{}) (*time.Time, error) {
@@ -159,11 +159,11 @@ func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.UpdateMap({{$lname}}Map)})
+	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.UpdateMap({{$lname}}Map)})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func ({{$short}} *{{$name}}) Delete(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
@@ -180,11 +180,11 @@ func ({{$short}} *{{$name}}) Delete(ctx context.Context, {{$lname}} *model.{{.Na
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	t, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.Delete()})
+	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.Delete()})
 	if err != nil {
 		return nil, err
 	}
-	return &t, nil
+	return &modified, nil
 }
 
 func ({{$short}} *{{$name}}) Builder() *{{$lname}}Builder {
