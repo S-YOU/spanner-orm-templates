@@ -2,7 +2,7 @@
 package {{ .Package }}
 {{- range $k, $v := .TableMap }}
 
-type {{$v.Name}}Repository interface {
+type {{$v.Name}}RepositoryGenerated interface {
 	{{$v.Name}}RepositoryIndexes
 	{{$v.Name}}RepositoryCRUD
 	{{$v.Name}}RepositoryUtil
