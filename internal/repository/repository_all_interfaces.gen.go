@@ -4,14 +4,17 @@ package repository
 type GroupRepository interface {
 	GroupRepositoryIndexes
 	GroupRepositoryCRUD
+	GroupRepositoryUtil
 }
 
 type UserGroupRepository interface {
 	UserGroupRepositoryIndexes
 	UserGroupRepositoryCRUD
+	UserGroupRepositoryUtil
 }
 
 type UserRepository interface {
 	UserRepositoryIndexes
 	UserRepositoryCRUD
+	UserRepositoryUtil
 } //

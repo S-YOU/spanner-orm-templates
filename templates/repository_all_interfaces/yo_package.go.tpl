@@ -5,6 +5,7 @@ package {{ .Package }}
 type {{$v.Name}}Repository interface {
 	{{$v.Name}}RepositoryIndexes
 	{{$v.Name}}RepositoryCRUD
+	{{$v.Name}}RepositoryUtil
 }
 {{- end }}
 {{- /* */ -}}

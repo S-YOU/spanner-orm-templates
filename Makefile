@@ -86,6 +86,14 @@ yo-gen:
 		--custom-type-package model \
 		--suffix _all_interfaces.gen.go \
 		--single-file
+	bin/yo generate $(DB_SPANNER_SCHEMA) -o $(OUT_DIR)/repository \
+		--from-ddl \
+		--template-path ./templates/repository_util \
+		--inflection-rule-file templates/inflection_rule.yml \
+		--custom-types-file templates/custom_types.yml \
+		--custom-type-package model \
+		--suffix _util.gen.go \
+		--single-file
 ### test
 test:
 	go test -v -p 1 ./...
