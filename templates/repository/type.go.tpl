@@ -261,7 +261,6 @@ func (iter *{{$lname}}Iterator) Into(into *model.{{.Name}}) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if cacheValue, ok := v.(*model.{{.Name}}); ok {
 				if err := copyInto(iter.cols, into, cacheValue); err != nil {
@@ -285,7 +284,6 @@ func (iter *{{$lname}}Iterator) Intos(into *[]*model.{{.Name}}) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if *into, ok = v.([]*model.{{.Name}}); ok {
 				return nil

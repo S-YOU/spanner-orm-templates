@@ -13,11 +13,11 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"github.com/cespare/xxhash"
+	"github.com/patrickmn/go-cache"
 	"google.golang.org/api/iterator"
 
 	"github.com/s-you/spannerbuilder"
 	"github.com/s-you/yo-templates/internal/model"
-	"github.com/s-you/yo-templates/internal/pkg/cache"
 )
 
 type Repository struct {
@@ -44,6 +44,7 @@ type queryCache struct {
 
 var (
 	ErrNotFound = errors.New("NotFound")
+	cached      = cache.New(0, 10*time.Minute)
 )
 
 func (r Repository) Transaction(ctx context.Context, fn func(tx Transaction) error) error {
@@ -445,7 +446,6 @@ func (iter *groupIterator) Into(into *model.Group) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if cacheValue, ok := v.(*model.Group); ok {
 				if err := copyInto(iter.cols, into, cacheValue); err != nil {
@@ -469,7 +469,6 @@ func (iter *groupIterator) Intos(into *[]*model.Group) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if *into, ok = v.([]*model.Group); ok {
 				return nil
@@ -755,7 +754,6 @@ func (iter *userIterator) Into(into *model.User) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if cacheValue, ok := v.(*model.User); ok {
 				if err := copyInto(iter.cols, into, cacheValue); err != nil {
@@ -779,7 +777,6 @@ func (iter *userIterator) Intos(into *[]*model.User) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if *into, ok = v.([]*model.User); ok {
 				return nil
@@ -1077,7 +1074,6 @@ func (iter *userGroupIterator) Into(into *model.UserGroup) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if cacheValue, ok := v.(*model.UserGroup); ok {
 				if err := copyInto(iter.cols, into, cacheValue); err != nil {
@@ -1101,7 +1097,6 @@ func (iter *userGroupIterator) Intos(into *[]*model.UserGroup) error {
 		if err != nil {
 			return err
 		}
-		cached := cache.Default
 		if v, ok := cached.Get(cacheKey); ok {
 			if *into, ok = v.([]*model.UserGroup); ok {
 				return nil
