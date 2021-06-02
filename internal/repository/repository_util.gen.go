@@ -61,7 +61,7 @@ func (u userRepository) Names(in []*model.User) []string {
 	return items
 }
 
-func (u userRepository) NameToUsersMap(in []*model.User) map[string][]*model.User { // Not Unique
+func (u userRepository) NameToUsersMap(in []*model.User) map[string][]*model.User {
 	itemMap := make(map[string][]*model.User)
 	for _, x := range in {
 		if _, ok := itemMap[x.Name]; !ok {
@@ -80,7 +80,7 @@ func (u userRepository) Names(in []*model.User) []string {
 	return items
 }
 
-func (u userRepository) NameToUsersMap(in []*model.User) map[string][]*model.User { // Not Unique
+func (u userRepository) NameToUsersMap(in []*model.User) map[string][]*model.User {
 	itemMap := make(map[string][]*model.User)
 	for _, x := range in {
 		if _, ok := itemMap[x.Name]; !ok {
@@ -99,7 +99,7 @@ func (u userRepository) Statuses(in []*model.User) []int64 {
 	return items
 }
 
-func (u userRepository) StatusToUsersMap(in []*model.User) map[int64][]*model.User { // Not Unique
+func (u userRepository) StatusToUsersMap(in []*model.User) map[int64][]*model.User {
 	itemMap := make(map[int64][]*model.User)
 	for _, x := range in {
 		if _, ok := itemMap[x.Status]; !ok {

@@ -71,7 +71,7 @@ func ({{$short}} {{$name}}) {{ pluralize .Name }}(in []*model.{{$typeName}}) []{
 }
 {{- if and $idx.Index.IsUnique (eq (len $idx.Fields) 1) }}
 
-func ({{$short}} {{$name}}) {{.Name}}To{{ $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}]*model.{{$typeName}} { // Unique
+func ({{$short}} {{$name}}) {{.Name}}To{{ $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}]*model.{{$typeName}} {
 	itemMap := make(map[{{.Type}}]*model.{{$typeName}})
 	for _, x := range in {
 		itemMap[x.{{.Name}}] = x
@@ -80,7 +80,7 @@ func ({{$short}} {{$name}}) {{.Name}}To{{ $typeName }}Map(in []*model.{{$typeNam
 }
 {{- else }}
 
-func ({{$short}} {{$name}}) {{.Name}}To{{ pluralize $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}][]*model.{{$typeName}} { // Not Unique
+func ({{$short}} {{$name}}) {{.Name}}To{{ pluralize $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}][]*model.{{$typeName}} {
 	itemMap := make(map[{{.Type}}][]*model.{{$typeName}})
 	for _, x := range in {
 		if _, ok := itemMap[x.{{.Name}}]; !ok {
