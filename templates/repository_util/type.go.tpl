@@ -3,6 +3,7 @@
 {{- $typeName := .Name }}
 {{- $database := (print .Name "Repository") }}
 {{- $pfields := .PrimaryKeyFields }}
+{{- $indexes := .Indexes }}
 
 type {{ $database }}Util interface {
 	{{- range .PrimaryKeyFields }}
@@ -13,16 +14,21 @@ type {{ $database }}Util interface {
 	{{.Name}}To{{ pluralize $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}][]*model.{{$typeName}}
 	{{- end }}{{ end }}
 	{{- range $_, $idx := .Indexes }}
-	{{- range $_, $i := .Fields }}
-	{{- $done := false }}{{ range $_, $p := $pfields }}{{ if eq $p.Name $i.Name }}{{ $done = true }}{{ end }}{{end}}
-	{{- if not $done }}
+		{{- range $_, $i := .Fields }}
+			{{- $inPkey := false }}
+			{{- range $_, $p := $pfields }}{{ if eq $p.Name $i.Name }}{{ $inPkey = true }}{{ end }}{{- end}}
+			{{- $inPrevKey := false }}{{- $foundCurKey := false }}
+			{{- range $_, $idx1 := $indexes }}{{if eq $idx1.Index.IndexName $idx.Index.IndexName}}{{$foundCurKey = true}}{{end}}{{if not $foundCurKey}}{{- range $_, $i1 := .Fields }}{{ if eq $i1.Name $i.Name }}{{ $inPrevKey = true }}{{ end }}{{ end}}{{ end }}{{end }}
+			{{- if not (or $inPkey $inPrevKey) }}
 	{{ pluralize .Name }}(in []*model.{{$typeName}}) []{{.Type}}
-	{{- if and $idx.Index.IsUnique (eq (len $idx.Fields) 1) }}
+				{{- if and $idx.Index.IsUnique (eq (len $idx.Fields) 1) }}
 	{{.Name}}To{{ $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}]*model.{{$typeName}}
-	{{- else }}
+				{{- else }}
 	{{.Name}}To{{ pluralize $typeName }}Map(in []*model.{{$typeName}}) map[{{.Type}}][]*model.{{$typeName}}
+				{{- end }}
+			{{- end }}
+		{{- end }}
 	{{- end }}
-	{{- end }}{{ end }}{{ end }}
 }
 
 {{- range .PrimaryKeyFields }}
@@ -59,8 +65,11 @@ func ({{$short}} {{$name}}) {{.Name}}To{{ pluralize $typeName }}Map(in []*model.
 
 {{- range $_, $idx := .Indexes }}
 {{- range $_, $i := .Fields }}
-{{- $done := false }}{{ range $_, $p := $pfields }}{{ if eq $p.Name $i.Name }}{{ $done = true }}{{ end }}{{end}}
-{{- if not $done }}
+{{- $inPkey := false }}
+{{- range $_, $p := $pfields }}{{ if eq $p.Name $i.Name }}{{ $inPkey = true }}{{ end }}{{- end}}
+{{- $inPrevKey := false }}{{- $foundCurKey := false }}
+{{- range $_, $idx1 := $indexes }}{{if eq $idx1.Index.IndexName $idx.Index.IndexName}}{{$foundCurKey = true}}{{end}}{{if not $foundCurKey}}{{- range $_, $i1 := .Fields }}{{ if eq $i1.Name $i.Name }}{{ $inPrevKey = true }}{{ end }}{{ end}}{{ end }}{{end }}
+{{- if not (or $inPkey $inPrevKey) }}
 
 func ({{$short}} {{$name}}) {{ pluralize .Name }}(in []*model.{{$typeName}}) []{{.Type}} {
 	items := make([]{{.Type}}, len(in))

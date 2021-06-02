@@ -25,7 +25,13 @@ type {{ $database }}Indexes interface {
 	Get{{$typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error)
 	Get{{$typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{ .Name }}{{ end }}Fast(ctx context.Context{{ goparamlist .Fields true true }}) (*model.{{ .Type.Name }}, error)
 		{{- end }}
+		{{- $inPkey := false }}
+		{{- if and (eq (len .Fields) 1) (gt (len $primaryKeys) 1) }}
+			{{- range $_, $f := .Fields }}{{ range $_, $p := $primaryKeys }}{{ if eq $p.Name $f.Name }}{{ $inPkey = true }}{{ end }}{{end}}{{ end }}
+		{{- end }}
+		{{- if not $inPkey }}
 	Find{{pluralize $typeName}}By{{- range $i, $f := .Fields }}{{ if $i }}And{{ end }}{{pluralize .Name }}{{ end }}(ctx context.Context{{- range .Fields }}, {{goparamname (pluralize .Name)}} []{{.Type}}{{end}}) ([]*model.{{ .Type.Name }}, error)
+		{{- end }}
 	{{- end}}
 }
 

@@ -7,6 +7,6 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/google/uuid v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/s-you/spannerbuilder v0.0.4
+	github.com/s-you/spannerbuilder v0.0.5
 	google.golang.org/api v0.47.0
 )

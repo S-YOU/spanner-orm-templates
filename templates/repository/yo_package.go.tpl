@@ -14,9 +14,9 @@ import (
 	"cloud.google.com/go/spanner"
 	"github.com/cespare/xxhash"
 	"github.com/patrickmn/go-cache"
+	"github.com/s-you/spannerbuilder"
 	"google.golang.org/api/iterator"
 
-	"github.com/s-you/spannerbuilder"
 	"github.com/s-you/yo-templates/internal/model"
 )
 

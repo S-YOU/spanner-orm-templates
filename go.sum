@@ -182,6 +182,8 @@ github.com/rogpeppe/go-internal v1.3.0 h1:RR9dF3JtopPvtkroDZuVD7qquD0bnHlKSqaQhg
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/s-you/spannerbuilder v0.0.4 h1:inRB8Iq3yzTdRQifW4u8plR7JJJQ3MPciv6KOSsnu4M=
 github.com/s-you/spannerbuilder v0.0.4/go.mod h1:Q8NUImI1J2mtgh1WuEvXpNlpr3eB1Ltu9qcf81wbGUY=
+github.com/s-you/spannerbuilder v0.0.5 h1:Jk/rzKWFUHOUURc11lmffN0yg0pqj+ghfPDyhyDyPLw=
+github.com/s-you/spannerbuilder v0.0.5/go.mod h1:Q8NUImI1J2mtgh1WuEvXpNlpr3eB1Ltu9qcf81wbGUY=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/stretchr/objx v0.1.0 h1:4G4v2dO3VZwixGIRoQ5Lfboy6nUhCyYzaqnIAPPhYs4=

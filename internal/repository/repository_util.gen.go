@@ -31,8 +31,6 @@ type UserRepositoryUtil interface {
 	UserIDToUserMap(in []*model.User) map[string]*model.User
 	Names(in []*model.User) []string
 	NameToUsersMap(in []*model.User) map[string][]*model.User
-	Names(in []*model.User) []string
-	NameToUsersMap(in []*model.User) map[string][]*model.User
 	Statuses(in []*model.User) []int64
 	StatusToUsersMap(in []*model.User) map[int64][]*model.User
 }
@@ -49,25 +47,6 @@ func (u userRepository) UserIDToUserMap(in []*model.User) map[string]*model.User
 	itemMap := make(map[string]*model.User)
 	for _, x := range in {
 		itemMap[x.UserID] = x
-	}
-	return itemMap
-}
-
-func (u userRepository) Names(in []*model.User) []string {
-	items := make([]string, len(in))
-	for i, x := range in {
-		items[i] = x.Name
-	}
-	return items
-}
-
-func (u userRepository) NameToUsersMap(in []*model.User) map[string][]*model.User {
-	itemMap := make(map[string][]*model.User)
-	for _, x := range in {
-		if _, ok := itemMap[x.Name]; !ok {
-			itemMap[x.Name] = make([]*model.User, 0)
-		}
-		itemMap[x.Name] = append(itemMap[x.Name], x)
 	}
 	return itemMap
 }
