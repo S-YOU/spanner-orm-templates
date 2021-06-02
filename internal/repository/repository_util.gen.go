@@ -112,7 +112,9 @@ func (u userRepository) StatusToUsersMap(in []*model.User) map[int64][]*model.Us
 
 type UserGroupRepositoryUtil interface {
 	GroupIDs(in []*model.UserGroup) []string
+	GroupIDToUserGroupsMap(in []*model.UserGroup) map[string][]*model.UserGroup
 	UserIDs(in []*model.UserGroup) []string
+	UserIDToUserGroupsMap(in []*model.UserGroup) map[string][]*model.UserGroup
 }
 
 func (ug userGroupRepository) GroupIDs(in []*model.UserGroup) []string {
@@ -123,10 +125,32 @@ func (ug userGroupRepository) GroupIDs(in []*model.UserGroup) []string {
 	return items
 }
 
+func (ug userGroupRepository) GroupIDToUserGroupsMap(in []*model.UserGroup) map[string][]*model.UserGroup {
+	itemMap := make(map[string][]*model.UserGroup)
+	for _, x := range in {
+		if _, ok := itemMap[x.GroupID]; !ok {
+			itemMap[x.GroupID] = make([]*model.UserGroup, 0)
+		}
+		itemMap[x.GroupID] = append(itemMap[x.GroupID], x)
+	}
+	return itemMap
+}
+
 func (ug userGroupRepository) UserIDs(in []*model.UserGroup) []string {
 	items := make([]string, len(in))
 	for i, x := range in {
 		items[i] = x.UserID
 	}
 	return items
+}
+
+func (ug userGroupRepository) UserIDToUserGroupsMap(in []*model.UserGroup) map[string][]*model.UserGroup {
+	itemMap := make(map[string][]*model.UserGroup)
+	for _, x := range in {
+		if _, ok := itemMap[x.UserID]; !ok {
+			itemMap[x.UserID] = make([]*model.UserGroup, 0)
+		}
+		itemMap[x.UserID] = append(itemMap[x.UserID], x)
+	}
+	return itemMap
 }
