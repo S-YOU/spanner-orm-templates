@@ -46,6 +46,15 @@ func (g *Group) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	return ret, nil
 }
 
+func (g *Group) Ptrs() []interface{} {
+	return []interface{}{
+		&g.GroupID,
+		&g.Name,
+		&g.CreatedAt,
+		&g.UpdatedAt,
+	}
+}
+
 func (g *Group) columnsToValues(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
@@ -113,6 +122,16 @@ func (u *User) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 	return ret, nil
 }
 
+func (u *User) Ptrs() []interface{} {
+	return []interface{}{
+		&u.UserID,
+		&u.Name,
+		&u.Status,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	}
+}
+
 func (u *User) columnsToValues(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
@@ -178,6 +197,15 @@ func (ug *UserGroup) ColumnsToPtrs(cols []string) ([]interface{}, error) {
 		}
 	}
 	return ret, nil
+}
+
+func (ug *UserGroup) Ptrs() []interface{} {
+	return []interface{}{
+		&ug.GroupID,
+		&ug.UserID,
+		&ug.CreatedAt,
+		&ug.UpdatedAt,
+	}
 }
 
 func (ug *UserGroup) columnsToValues(cols []string) ([]interface{}, error) {

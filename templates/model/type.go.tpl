@@ -45,6 +45,14 @@ func ({{ $short }} *{{ .Name }}) ColumnsToPtrs(cols []string) ([]interface{}, er
 	return ret, nil
 }
 
+func ({{ $short }} *{{ .Name }}) Ptrs() []interface{} {
+	return []interface{}{
+	{{- range .Fields }}
+		&{{ $short }}.{{ .Name }},
+	{{- end }}
+	}
+}
+
 func ({{ $short }} *{{ .Name }}) columnsToValues(cols []string) ([]interface{}, error) {
 	ret := make([]interface{}, 0, len(cols))
 	for _, col := range cols {
