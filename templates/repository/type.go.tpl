@@ -13,7 +13,7 @@
 {{- $pkey0 := (index .PrimaryKeyFields 0) }}
 
 type {{ $name }} struct {
-	Repository
+	repository
 }
 
 type {{$lname}}Builder struct {
@@ -29,7 +29,7 @@ type {{$lname}}Iterator struct {
 
 func New{{ $database }}(client *spanner.Client) {{ $database }} {
 	return &{{ $name }}{
-		Repository: Repository{
+		repository: repository{
 			client: client,
 		},
 	}
@@ -70,16 +70,24 @@ func ({{$short}} *{{$name}}) Insert(ctx context.Context, {{$lname}} *model.{{.Na
 	}
 {{- end }}
 
-	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Insert()})
+	mutation := []*spanner.Mutation{ {{- $lname}}.Insert()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := {{$short}}.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
 	return &modified, nil
 }
 
-func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *model.{{.Name}}) (time.Time, error) {
+func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
 	if err := {{$lname}}.SetIdentity(); err != nil {
-		return time.Time{}, err
+		return nil, err
 	}
 {{- if $hasCreatedAt }}
 	if {{$lname}}.CreatedAt.IsZero() {
@@ -92,11 +100,19 @@ func ({{$short}} *{{$name}}) InsertOrUpdate(ctx context.Context, {{$lname}} *mod
 	}
 {{- end }}
 
-	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.InsertOrUpdate()})
-	if err != nil {
-		return time.Time{}, err
+	mutation := []*spanner.Mutation{ {{- $lname}}.InsertOrUpdate()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	return modified, nil
+
+	modified, err := {{$short}}.client.Apply(ctx, mutation)
+	if err != nil {
+		return nil, err
+	}
+	return &modified, nil
 }
 
 func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Name}}) (*time.Time, error) {
@@ -113,7 +129,15 @@ func ({{$short}} *{{$name}}) Update(ctx context.Context, {{$lname}} *model.{{.Na
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname}}.Update()})
+	mutation := []*spanner.Mutation{ {{- $lname}}.Update()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := {{$short}}.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -134,11 +158,20 @@ func ({{$short}} *{{$name}}) UpdateColumns(ctx context.Context, {{$lname}} *mode
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	mutation, err := {{$lname}}.UpdateColumns(cols...)
+	_mutation, err := {{$lname}}.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{mutation})
+
+	mutation := []*spanner.Mutation{_mutation}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := {{$short}}.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +192,15 @@ func ({{$short}} *{{$name}}) UpdateMap(ctx context.Context, {{$lname}} *model.{{
 	{{$lname}}.UpdatedAt = time.Now()
 {{- end }}
 
-	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.UpdateMap({{$lname}}Map)})
+	mutation := []*spanner.Mutation{ {{- $lname }}.UpdateMap({{$lname}}Map)}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := {{$short}}.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -171,16 +212,16 @@ func ({{$short}} *{{$name}}) Delete(ctx context.Context, {{$lname}} *model.{{.Na
 	if {{$lname}}.{{ .Name }} == {{ if eq .Type "string" }}""{{else}}0{{end}} {
 		return nil, fmt.Errorf("primary_key `{{ colname .Col }}` is blank")
 	}{{ end}}
-{{- if $hasCreatedAt }}
-	if {{$lname}}.CreatedAt.IsZero() {
-		return nil, fmt.Errorf("created_at is blank")
-	}
-{{- end }}
-{{- if $hasUpdatedAt }}
-	{{$lname}}.UpdatedAt = time.Now()
-{{- end }}
 
-	modified, err := {{$short}}.client.Apply(ctx, []*spanner.Mutation{ {{- $lname }}.Delete()})
+	mutation := []*spanner.Mutation{ {{- $lname }}.Delete()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := {{$short}}.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ type AllRepository struct {
 	Group     GroupRepository
 	UserGroup UserGroupRepository
 	User      UserRepository
+	Repository
 }
 
 func NewAllRepository(client *spanner.Client) *AllRepository {
@@ -16,5 +17,6 @@ func NewAllRepository(client *spanner.Client) *AllRepository {
 		NewGroupRepository(client),
 		NewUserGroupRepository(client),
 		NewUserRepository(client),
+		NewRepository(client),
 	}
 } //

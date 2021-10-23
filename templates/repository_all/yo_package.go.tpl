@@ -14,6 +14,7 @@ type AllRepository struct {
 {{- range $k, $v := .TableMap }}
 	{{printf "%-*s" $maxLen $v.Name}} {{$v.Name}}Repository
 {{- end }}
+	Repository
 }
 
 func NewAllRepository(client *spanner.Client) *AllRepository {
@@ -21,6 +22,7 @@ func NewAllRepository(client *spanner.Client) *AllRepository {
 		{{- range $k, $v := .TableMap }}
 		New{{$v.Name}}Repository(client),
 		{{- end }}
+		NewRepository(client),
 	}
 }
 {{- /* */ -}}

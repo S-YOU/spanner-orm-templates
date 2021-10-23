@@ -20,8 +20,12 @@ import (
 	"github.com/s-you/yo-templates/internal/model"
 )
 
-type Repository struct {
+type repository struct {
 	client *spanner.Client
+}
+
+type Repository interface {
+	Transaction(context.Context, func(context.Context) error) error
 }
 
 type (
@@ -42,16 +46,23 @@ type queryCache struct {
 	enabled  bool
 }
 
+type transactionKey struct{}
+
 var (
 	ErrNotFound = errors.New("NotFound")
 	cached      = cache.New(0, 10*time.Minute)
+	txKey       = &transactionKey{}
 )
 
-func (r Repository) Transaction(ctx context.Context, fn func(tx Transaction) error) error {
-	_, err := r.client.ReadWriteTransaction(ctx, func(ctx context.Context, tx Transaction) error {
-		return fn(tx)
+func (r *repository) Transaction(ctx context.Context, fn func(context.Context) error) error {
+	_, err := r.client.ReadWriteTransaction(ctx, func(_ context.Context, tx Transaction) error {
+		return fn(context.WithValue(ctx, txKey, tx))
 	})
 	return err
+}
+
+func NewRepository(client *spanner.Client) Repository {
+	return &repository{client}
 }
 
 func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {

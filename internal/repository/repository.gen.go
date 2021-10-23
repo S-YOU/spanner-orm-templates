@@ -20,8 +20,12 @@ import (
 	"github.com/s-you/yo-templates/internal/model"
 )
 
-type Repository struct {
+type repository struct {
 	client *spanner.Client
+}
+
+type Repository interface {
+	Transaction(context.Context, func(context.Context) error) error
 }
 
 type (
@@ -42,16 +46,23 @@ type queryCache struct {
 	enabled  bool
 }
 
+type transactionKey struct{}
+
 var (
 	ErrNotFound = errors.New("NotFound")
 	cached      = cache.New(0, 10*time.Minute)
+	txKey       = &transactionKey{}
 )
 
-func (r Repository) Transaction(ctx context.Context, fn func(tx Transaction) error) error {
-	_, err := r.client.ReadWriteTransaction(ctx, func(ctx context.Context, tx Transaction) error {
-		return fn(tx)
+func (r *repository) Transaction(ctx context.Context, fn func(context.Context) error) error {
+	_, err := r.client.ReadWriteTransaction(ctx, func(_ context.Context, tx Transaction) error {
+		return fn(context.WithValue(ctx, txKey, tx))
 	})
 	return err
+}
+
+func NewRepository(client *spanner.Client) Repository {
+	return &repository{client}
 }
 
 func intoDecodable(iter *spanner.RowIterator, cols []string, into Decodable) error {
@@ -226,7 +237,7 @@ func getCacheKey(stmt spanner.Statement) (string, error) {
 }
 
 type groupRepository struct {
-	Repository
+	repository
 }
 
 type groupBuilder struct {
@@ -242,7 +253,7 @@ type groupIterator struct {
 
 func NewGroupRepository(client *spanner.Client) GroupRepository {
 	return &groupRepository{
-		Repository: Repository{
+		repository: repository{
 			client: client,
 		},
 	}
@@ -279,16 +290,24 @@ func (g *groupRepository) Insert(ctx context.Context, group *model.Group) (*time
 		group.UpdatedAt = time.Now()
 	}
 
-	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.Insert()})
+	mutation := []*spanner.Mutation{group.Insert()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := g.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
 	return &modified, nil
 }
 
-func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group) (time.Time, error) {
+func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group) (*time.Time, error) {
 	if err := group.SetIdentity(); err != nil {
-		return time.Time{}, err
+		return nil, err
 	}
 	if group.CreatedAt.IsZero() {
 		group.CreatedAt = time.Now()
@@ -297,11 +316,19 @@ func (g *groupRepository) InsertOrUpdate(ctx context.Context, group *model.Group
 		group.UpdatedAt = time.Now()
 	}
 
-	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.InsertOrUpdate()})
-	if err != nil {
-		return time.Time{}, err
+	mutation := []*spanner.Mutation{group.InsertOrUpdate()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	return modified, nil
+
+	modified, err := g.client.Apply(ctx, mutation)
+	if err != nil {
+		return nil, err
+	}
+	return &modified, nil
 }
 
 func (g *groupRepository) Update(ctx context.Context, group *model.Group) (*time.Time, error) {
@@ -313,7 +340,15 @@ func (g *groupRepository) Update(ctx context.Context, group *model.Group) (*time
 	}
 	group.UpdatedAt = time.Now()
 
-	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.Update()})
+	mutation := []*spanner.Mutation{group.Update()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := g.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -329,11 +364,20 @@ func (g *groupRepository) UpdateColumns(ctx context.Context, group *model.Group,
 	}
 	group.UpdatedAt = time.Now()
 
-	mutation, err := group.UpdateColumns(cols...)
+	_mutation, err := group.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	modified, err := g.client.Apply(ctx, []*spanner.Mutation{mutation})
+
+	mutation := []*spanner.Mutation{_mutation}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := g.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +393,15 @@ func (g *groupRepository) UpdateMap(ctx context.Context, group *model.Group, gro
 	}
 	group.UpdatedAt = time.Now()
 
-	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.UpdateMap(groupMap)})
+	mutation := []*spanner.Mutation{group.UpdateMap(groupMap)}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := g.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -360,12 +412,16 @@ func (g *groupRepository) Delete(ctx context.Context, group *model.Group) (*time
 	if group.GroupID == "" {
 		return nil, fmt.Errorf("primary_key `group_id` is blank")
 	}
-	if group.CreatedAt.IsZero() {
-		return nil, fmt.Errorf("created_at is blank")
-	}
-	group.UpdatedAt = time.Now()
 
-	modified, err := g.client.Apply(ctx, []*spanner.Mutation{group.Delete()})
+	mutation := []*spanner.Mutation{group.Delete()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := g.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -534,7 +590,7 @@ func (iter *groupIterator) IntosAnySlice(into interface{}) error {
 }
 
 type userRepository struct {
-	Repository
+	repository
 }
 
 type userBuilder struct {
@@ -550,7 +606,7 @@ type userIterator struct {
 
 func NewUserRepository(client *spanner.Client) UserRepository {
 	return &userRepository{
-		Repository: Repository{
+		repository: repository{
 			client: client,
 		},
 	}
@@ -587,16 +643,24 @@ func (u *userRepository) Insert(ctx context.Context, user *model.User) (*time.Ti
 		user.UpdatedAt = time.Now()
 	}
 
-	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.Insert()})
+	mutation := []*spanner.Mutation{user.Insert()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := u.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
 	return &modified, nil
 }
 
-func (u *userRepository) InsertOrUpdate(ctx context.Context, user *model.User) (time.Time, error) {
+func (u *userRepository) InsertOrUpdate(ctx context.Context, user *model.User) (*time.Time, error) {
 	if err := user.SetIdentity(); err != nil {
-		return time.Time{}, err
+		return nil, err
 	}
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
@@ -605,11 +669,19 @@ func (u *userRepository) InsertOrUpdate(ctx context.Context, user *model.User) (
 		user.UpdatedAt = time.Now()
 	}
 
-	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.InsertOrUpdate()})
-	if err != nil {
-		return time.Time{}, err
+	mutation := []*spanner.Mutation{user.InsertOrUpdate()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	return modified, nil
+
+	modified, err := u.client.Apply(ctx, mutation)
+	if err != nil {
+		return nil, err
+	}
+	return &modified, nil
 }
 
 func (u *userRepository) Update(ctx context.Context, user *model.User) (*time.Time, error) {
@@ -621,7 +693,15 @@ func (u *userRepository) Update(ctx context.Context, user *model.User) (*time.Ti
 	}
 	user.UpdatedAt = time.Now()
 
-	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.Update()})
+	mutation := []*spanner.Mutation{user.Update()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := u.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -637,11 +717,20 @@ func (u *userRepository) UpdateColumns(ctx context.Context, user *model.User, co
 	}
 	user.UpdatedAt = time.Now()
 
-	mutation, err := user.UpdateColumns(cols...)
+	_mutation, err := user.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	modified, err := u.client.Apply(ctx, []*spanner.Mutation{mutation})
+
+	mutation := []*spanner.Mutation{_mutation}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := u.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -657,7 +746,15 @@ func (u *userRepository) UpdateMap(ctx context.Context, user *model.User, userMa
 	}
 	user.UpdatedAt = time.Now()
 
-	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.UpdateMap(userMap)})
+	mutation := []*spanner.Mutation{user.UpdateMap(userMap)}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := u.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -668,12 +765,16 @@ func (u *userRepository) Delete(ctx context.Context, user *model.User) (*time.Ti
 	if user.UserID == "" {
 		return nil, fmt.Errorf("primary_key `user_id` is blank")
 	}
-	if user.CreatedAt.IsZero() {
-		return nil, fmt.Errorf("created_at is blank")
-	}
-	user.UpdatedAt = time.Now()
 
-	modified, err := u.client.Apply(ctx, []*spanner.Mutation{user.Delete()})
+	mutation := []*spanner.Mutation{user.Delete()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := u.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -842,7 +943,7 @@ func (iter *userIterator) IntosAnySlice(into interface{}) error {
 }
 
 type userGroupRepository struct {
-	Repository
+	repository
 }
 
 type userGroupBuilder struct {
@@ -858,7 +959,7 @@ type userGroupIterator struct {
 
 func NewUserGroupRepository(client *spanner.Client) UserGroupRepository {
 	return &userGroupRepository{
-		Repository: Repository{
+		repository: repository{
 			client: client,
 		},
 	}
@@ -895,16 +996,24 @@ func (ug *userGroupRepository) Insert(ctx context.Context, userGroup *model.User
 		userGroup.UpdatedAt = time.Now()
 	}
 
-	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Insert()})
+	mutation := []*spanner.Mutation{userGroup.Insert()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := ug.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
 	return &modified, nil
 }
 
-func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *model.UserGroup) (time.Time, error) {
+func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
 	if err := userGroup.SetIdentity(); err != nil {
-		return time.Time{}, err
+		return nil, err
 	}
 	if userGroup.CreatedAt.IsZero() {
 		userGroup.CreatedAt = time.Now()
@@ -913,11 +1022,19 @@ func (ug *userGroupRepository) InsertOrUpdate(ctx context.Context, userGroup *mo
 		userGroup.UpdatedAt = time.Now()
 	}
 
-	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.InsertOrUpdate()})
-	if err != nil {
-		return time.Time{}, err
+	mutation := []*spanner.Mutation{userGroup.InsertOrUpdate()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	return modified, nil
+
+	modified, err := ug.client.Apply(ctx, mutation)
+	if err != nil {
+		return nil, err
+	}
+	return &modified, nil
 }
 
 func (ug *userGroupRepository) Update(ctx context.Context, userGroup *model.UserGroup) (*time.Time, error) {
@@ -932,7 +1049,15 @@ func (ug *userGroupRepository) Update(ctx context.Context, userGroup *model.User
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Update()})
+	mutation := []*spanner.Mutation{userGroup.Update()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := ug.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -951,11 +1076,20 @@ func (ug *userGroupRepository) UpdateColumns(ctx context.Context, userGroup *mod
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	mutation, err := userGroup.UpdateColumns(cols...)
+	_mutation, err := userGroup.UpdateColumns(cols...)
 	if err != nil {
 		return nil, err
 	}
-	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{mutation})
+
+	mutation := []*spanner.Mutation{_mutation}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := ug.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -974,7 +1108,15 @@ func (ug *userGroupRepository) UpdateMap(ctx context.Context, userGroup *model.U
 	}
 	userGroup.UpdatedAt = time.Now()
 
-	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.UpdateMap(userGroupMap)})
+	mutation := []*spanner.Mutation{userGroup.UpdateMap(userGroupMap)}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := ug.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
@@ -988,12 +1130,16 @@ func (ug *userGroupRepository) Delete(ctx context.Context, userGroup *model.User
 	if userGroup.UserID == "" {
 		return nil, fmt.Errorf("primary_key `user_id` is blank")
 	}
-	if userGroup.CreatedAt.IsZero() {
-		return nil, fmt.Errorf("created_at is blank")
-	}
-	userGroup.UpdatedAt = time.Now()
 
-	modified, err := ug.client.Apply(ctx, []*spanner.Mutation{userGroup.Delete()})
+	mutation := []*spanner.Mutation{userGroup.Delete()}
+	if tx, ok := ctx.Value(txKey).(Transaction); ok {
+		if err := tx.BufferWrite(mutation); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	modified, err := ug.client.Apply(ctx, mutation)
 	if err != nil {
 		return nil, err
 	}
